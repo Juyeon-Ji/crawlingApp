@@ -1,5 +1,5 @@
 import uuid
-
+import unittest
 import selenium
 from selenium import webdriver
 from selenium.webdriver import ActionChains
@@ -119,8 +119,28 @@ class CategoryScraper(object):
 
                 resultChildList.append(midCateMap)
 
-        driver.close()
+        self.driver.close()
+
+
+class SeleniumCrawlTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.url = 'https://search.shopping.naver.com/category/category.nhn?cat_id=50000805'
+
+    def test_url_parse(self):
+
+        splitvalue = self.separateRight(self.url, 'cat_id=')
+
+        self.assertEqual(splitvalue, '50000805')
+
+    def separateRight(self, value, delimiter):
+        if value is not None:
+            x = 0
+            x = value.find(delimiter)
+            if x != -1:
+                x = x + len(delimiter) - 1
+                return value[x + 1:len(value)]
+
 
 if __name__ in '__main__':
-    scraper = CategoryScraper()
-    scraper.parse()
+    unittest.main()

@@ -1,5 +1,34 @@
-[
-    {
-        
+{
+    "database": [
+        {
+            "database-type": "MONGO",
+            "host": "mongodb://192.168.137.223:27017/",
+            "server": "192.168.137.223",
+            "port": 27017,
+            "username": "",
+            "password": "",
+            "database-name": "crawl_database",
+            "tables":{
+                "table-1": "category",
+                "table-2": "product"
+            }
+        },
+        {
+            "database-type": "ELASTIC",
+            "host": "elastic://192.168.137.223:27017/",
+            "server": "192.168.137.223",
+            "port": 9200,
+            "username": "root",
+            "password": "test",
+            "database-name": "crawl_database",
+            "tables":{
+                "table-1": "category",
+                "table-2": "product"
+            }
+        }
+    ],
+    "crawl_config": {
+        "exclude-category": "",
+        "crawl-count": 0
     }
-]
+}

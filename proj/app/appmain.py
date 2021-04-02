@@ -17,13 +17,20 @@ if not baseprojectpathexists :
     sys.path.append(baseprojectpath)
 
 from proj.app.crawl.categorycrawl import CategoryCrawl
+from proj.common.database.dbmanager import DatabaseManager
+from proj.common.config.configmanager import ConfigManager
+
 
 def close(driver):
     if driver is not None:
         driver.close()
 
+
 def main():
-    CHROMEDRIVER_PATH = 'proj/resource/chromedriver.exe'
+    configmanager = ConfigManager()
+    databasemanager = DatabaseManager(configmanager.database_object_list)
+
+    CHROMEDRIVER_PATH = 'D:/_1.project/WEBuilder/python_project/crawling/proj/resource/chromedriver.exe'
     WINDOW_SIZE = "1920,1080"
 
     chrome_options = Options()
@@ -32,10 +39,10 @@ def main():
     chrome_options.add_argument( "--disable-gpu" )
     # chrome_options.add_argument( f"--window-size={ WINDOW_SIZE }" )
     
-    driver = webdriver.Chrome( executable_path=CHROMEDRIVER_PATH, chrome_options=chrome_options )
+    driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, chrome_options=chrome_options)
     
-    categoryCrawl = CategoryCrawl(driver)
-    categoryCrawl.parse()
+    categorycrawl = CategoryCrawl(driver)
+    categorycrawl.parse(databasemanager.insert_many_mongo)
 
     close(driver)
 
