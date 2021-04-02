@@ -32,7 +32,7 @@ class ConfigManager(object):
         self._load()
 
     def _load(self):
-        path = 'D:/_1.project/WEBuilder/python_project/crawling/proj/resource/application.json'
+        path = 'D:/_1.project/WEBuilder/python_project/git_crawling/crawlingApp/proj/resource/application.json'
         with open(path, 'r') as f:
             json_load = json.load(f)
 

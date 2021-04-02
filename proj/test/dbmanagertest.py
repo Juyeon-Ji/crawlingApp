@@ -22,14 +22,14 @@ class DatabseManagerTest(unittest.TestCase):
     def setUp(self):
         self.client : MongoClient = MongoClient(HOST)
 
-        self._db : Database = self.client.pymongo_db_test
+        self._db: Database = self.client.crawl_database_test
 
-        self._col : Collection = self._db.test
+        self._col: Collection = self._db.category
 
-        self._col1 : Collection = self._db.test2
+        # self._col1 : Collection = self._db.test2
 
     def tearDown(self):
-        self.client.drop_database("pymongo_db_test")
+        # self.client.drop_database("pymongo_db_test")
         pass
         
     def fix_rows(self):
@@ -38,17 +38,26 @@ class DatabseManagerTest(unittest.TestCase):
 
         return rows
 
-    def test_insert_1(self):
-        rows = self.fix_rows()
-        x = self._col.insert_many(rows)
+    def test_find(self):
+        jsons = self._col.find()
+        for json in jsons:
 
-        self.assertTrue(x.acknowledged)
+            print(json)
 
-    def test_insert_another_1(self):
-        rows = self.fix_rows()
-        x = self._col1.insert_many(rows)
+        self.assertIsNotNone(jsons)
 
-        self.assertTrue(x.acknowledged)
+
+    # def test_insert_1(self):
+    #     rows = self.fix_rows()
+    #     x = self._col.insert_many(rows)
+    #
+    #     self.assertTrue(x.acknowledged)
+    #
+    # def test_insert_another_1(self):
+    #     rows = self.fix_rows()
+    #     x = self._col1.insert_many(rows)
+    #
+    #     self.assertTrue(x.acknowledged)
         
     # def test_find_value_2(self):
     #     findItem = self._col.find_one()

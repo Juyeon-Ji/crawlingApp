@@ -1,5 +1,5 @@
 import uuid
-
+import logging
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 
@@ -45,6 +45,7 @@ class CategoryCrawl(object):
 
             # Root 이름
             root_name = category.text
+            logging.info('rootName : ' + root_name)
             # //*[@id="home_co_menu_wear"]
             parent_id = uuid.uuid4().hex
 
@@ -122,4 +123,4 @@ class CategoryCrawl(object):
 
                 resultChildList.append(midCateMap)
             # 수정 해야함.
-            func(self.category_result_map)
+            func('category', self.category_result_map)

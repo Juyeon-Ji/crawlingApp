@@ -7,7 +7,7 @@
             "port": 27017,
             "username": "",
             "password": "",
-            "database-name": "crawl_database",
+            "database-name": "crawl_database_test",
             "tables":{
                 "table-1": "category",
                 "table-2": "product"
@@ -29,6 +29,6 @@
     ],
     "crawl_config": {
         "exclude-category": "",
-        "crawl-count": 0
+        "crawl-count": 100
     }
 }

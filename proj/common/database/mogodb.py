@@ -22,7 +22,8 @@ class MongoDBManager(object):
         self.collection = collection
 
         self._client: MongoClient = None
-        
+
+        self._collection: Collection = None
         self._col_category: Collection = None
         self._col_detail: Collection = None
 
@@ -36,7 +37,8 @@ class MongoDBManager(object):
         if self._client is not None:
             self.isConnect = True
 
-            _db = self._client[self.database]  # db name
+            _db: Database = self._client[self.database]  # db name
+
             self._col_category = _db[self.collection.get('table-1')]  # table name
             self._col_detail = _db[self.collection.get('table-2')]  # table name
 
@@ -44,9 +46,13 @@ class MongoDBManager(object):
         if self._client is not None:
             self._client.close()
 
-    def insert_many(self, value: dict) -> bool:
+    def insert_many(self, collection: str, value: dict) -> bool:
         if self.isConnect:
-            x = self._col_category.insert_one(value)
+            x = self._collection[collection].insert_one(value)
 
             return x.acknowledged
+
+    def find_all(self, collection: str):
+        if self.isConnect:
+            return self._collection[collection].find()
 
