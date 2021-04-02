@@ -29,6 +29,10 @@
     ],
     "crawl_config": {
         "exclude-category": "",
-        "crawl-count": 100
+        "crawl-big-category": true,
+        "crawl-detail-category": false,
+        "crawl-count": 40,
+        "crawl-page-range": 10,
+        "crawl-sleep-time": 12
     }
 }

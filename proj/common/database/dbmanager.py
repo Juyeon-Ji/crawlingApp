@@ -36,6 +36,9 @@ class DatabaseManager:
         if self._mongoDB is not None:
             self._mongoDB.close()
 
+    def insert_one_mongo(self, collection: str, value) -> bool:
+        return self._mongoDB.insert_one(collection, value)
+
     def insert_many_mongo(self, collection: str, value) -> bool:
         return self._mongoDB.insert_many(collection, value)
 

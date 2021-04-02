@@ -46,13 +46,18 @@ class MongoDBManager(object):
         if self._client is not None:
             self._client.close()
 
-    def insert_many(self, collection: str, value: dict) -> bool:
+    def insert_one(self, collection: str, value: dict) -> bool:
         if self.isConnect:
             x = self._collection[collection].insert_one(value)
 
             return x.acknowledged
 
+    def insert_many(self, collection: str, value):
+        if self.isConnect:
+
+            return self._col_detail.insert_many(value)
+
     def find_all(self, collection: str):
         if self.isConnect:
-            return self._collection[collection].find()
+            return self._col_category.find()
 

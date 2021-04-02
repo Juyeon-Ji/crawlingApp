@@ -11,23 +11,24 @@ class ProductCrawl:
     url: str
     cat_id: str
 
-    def __init__(self):
-        CHROMEDRIVER_PATH = r'C:\Users\지주연\PycharmProjects\crawlingApp\proj\resource\chromedriver.exe'
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-gpu")
-        # chrome_options.add_argument( f"--window-size={ WINDOW_SIZE }" )
-
-        self.driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, chrome_options=chrome_options)
-
+    def __init__(self, driver, json_data, func):
+        # CHROMEDRIVER_PATH = r'C:\Users\지주연\PycharmProjects\crawlingApp\proj\resource\chromedriver.exe'
+        # chrome_options = Options()
+        # chrome_options.add_argument("--headless")
+        # chrome_options.add_argument("--no-sandbox")
+        # chrome_options.add_argument("--disable-gpu")
+        # # chrome_options.add_argument( f"--window-size={ WINDOW_SIZE }" )
+        #
+        # self.driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, chrome_options=chrome_options)
+        self.driver = driver
 
         self.paging_count = 1;
         self.baseUrl = ['https://search.shopping.naver.com/search/category?catId=',
                         '&frm=NVSHMDL&origQuery&pagingIndex=',
-                        '&pagingSize=100&productSet=model&query&sort=rel&timestamp=&viewType=list']
+                        '&pagingSize=40&productSet=model&query&sort=rel&timestamp=&viewType=list']
 
-        self.data = self.getData()
+        self.data = json_data
+        self.insert_fuc = func
 
         self.get_bigCategory_data()
 
@@ -38,7 +39,7 @@ class ProductCrawl:
             for bigCategory in category['child']:
                 for i in range(self.paging_count):
                     self.startPrasingProcess(bigCategory['cat_id'], i)
-                    print('>>> parsing page: ', bigCategory['name'],str(i))
+                    print('>>> parsing page: ', bigCategory['name'], str(i))
 
     def get_detailCategory_data(self):
         '''큰 카테고리의 하위 카테고리의 id로 조회'''
@@ -51,7 +52,8 @@ class ProductCrawl:
     def startPrasingProcess(self, catId, paginIndex):
         productPage_url = self.makeUrl(catId, paginIndex)
         self.scrollPage(productPage_url)
-        data =  self.parsingData() # 파싱 된 데이터
+        data = self.parsingData()  # 파싱 된 데이터
+        self.insert_fuc('product', data)
 
     def makeUrl(self, catId, pagingIndex) -> str:
         return self.baseUrl[0] + catId + self.baseUrl[1] + str(pagingIndex) + self.baseUrl[2]
