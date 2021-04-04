@@ -52,12 +52,17 @@ def main():
     
     driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, chrome_options=chrome_options)
 
-    categorycrawl = CategoryCrawl(driver, configmanager.crawl_config_object)
+    categorycrawl = CategoryCrawl(driver=driver,
+                                  crawl_config=configmanager.crawl_config_object)
+
     categorycrawl.parse(databasemanager.insert_many_mongo)
 
     json_datas = databasemanager.find_all_mongo('category')
 
-    category = ProductCrawl(driver=driver, func=databasemanager.insert_many_mongo, json_data=json_datas)
+    category = ProductCrawl(driver=driver,
+                            json_data=json_datas,
+                            func=databasemanager.insert_many_mongo,
+                            crawl_config=configmanager.crawl_config_object)
 
     logging.info('Crawl Test End')
     close(driver)

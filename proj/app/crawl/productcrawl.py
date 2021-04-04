@@ -1,17 +1,17 @@
-
+import time
 
 from selenium import webdriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 
-import time
+from proj.common.config.configmanager import CrawlConfiguration
 
 class ProductCrawl:
     url: str
     cat_id: str
 
-    def __init__(self, driver, json_data, func):
+    def __init__(self, driver, json_data, func, crawl_config):
         # CHROMEDRIVER_PATH = r'C:\Users\지주연\PycharmProjects\crawlingApp\proj\resource\chromedriver.exe'
         # chrome_options = Options()
         # chrome_options.add_argument("--headless")
@@ -21,7 +21,7 @@ class ProductCrawl:
         #
         # self.driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, chrome_options=chrome_options)
         self.driver = driver
-
+        self.crawl_config: CrawlConfiguration = crawl_config
         self.paging_count = 1;
         self.baseUrl = ['https://search.shopping.naver.com/search/category?catId=',
                         '&frm=NVSHMDL&origQuery&pagingIndex=',
