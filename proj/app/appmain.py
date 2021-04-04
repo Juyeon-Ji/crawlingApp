@@ -52,8 +52,8 @@ def main():
     
     driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, chrome_options=chrome_options)
 
-    # categorycrawl = CategoryCrawl(driver)
-    # categorycrawl.parse(databasemanager.insert_many_mongo)
+    categorycrawl = CategoryCrawl(driver, configmanager.crawl_config_object)
+    categorycrawl.parse(databasemanager.insert_many_mongo)
 
     json_datas = databasemanager.find_all_mongo('category')
 

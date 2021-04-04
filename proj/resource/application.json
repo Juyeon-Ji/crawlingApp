@@ -28,7 +28,7 @@
         }
     ],
     "crawl_config": {
-        "exclude-category": "",
+        "exclude-category": ["패션의류", "패션잡화"],
         "crawl-big-category": true,
         "crawl-detail-category": false,
         "crawl-count": 40,

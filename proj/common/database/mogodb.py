@@ -37,10 +37,10 @@ class MongoDBManager(object):
         if self._client is not None:
             self.isConnect = True
 
-            _db: Database = self._client[self.database]  # db name
+            self._db: Database = self._client[self.database]  # db name
 
-            self._col_category = _db[self.collection.get('table-1')]  # table name
-            self._col_detail = _db[self.collection.get('table-2')]  # table name
+            self._col_category = self._db[self.collection.get('table-1')]  # table name
+            self._col_detail = self._db[self.collection.get('table-2')]  # table name
 
     def close(self):
         if self._client is not None:
@@ -48,16 +48,16 @@ class MongoDBManager(object):
 
     def insert_one(self, collection: str, value: dict) -> bool:
         if self.isConnect:
-            x = self._collection[collection].insert_one(value)
+            x = self._db[collection].insert_one(value)
 
             return x.acknowledged
 
     def insert_many(self, collection: str, value):
         if self.isConnect:
 
-            return self._col_detail.insert_many(value)
+            return self._db[collection].insert_many(value)
 
     def find_all(self, collection: str):
         if self.isConnect:
-            return self._col_category.find()
+            return self._db[collection].find()
 

@@ -21,7 +21,11 @@ class DatabaseObject(object):
 
 class CrawlConfiguration:
     crawl_count: int = 0
-    exclude_category: str
+    crawl_page_range = 0
+    crawl_sleep_time = 0
+    crawl_big_category = False
+    crawl_detal_category = True
+    exclude_category: list
 
 
 class ConfigManager(object):
@@ -66,4 +70,9 @@ class ConfigManager(object):
             self.crawl_config_object = CrawlConfiguration()
 
             self.crawl_config_object.crawl_count = crawl_config.get('crawl-count')
+            self.crawl_config_object.exclude_category = crawl_config.get('exclude-category')
+            self.crawl_config_object.crawl_page_range = crawl_config.get('crawl-page-range')
+            self.crawl_config_object.crawl_sleep_time = crawl_config.get('crawl-sleep-time')
+            self.crawl_config_object.crawl_big_category = crawl_config.get('crawl-big-category')
+            self.crawl_config_object.crawl_detal_category = crawl_config.get('crawl-detail-category')
             self.crawl_config_object.exclude_category = crawl_config.get('exclude-category')
