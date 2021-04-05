@@ -11,6 +11,10 @@ from proj.common.database.dbmanager import DatabaseManager
 from proj.common.config.configmanager import CrawlConfiguration, ConfigManager
 
 
+def _join_path(token, source: str, value: str) -> str:
+    return token.join([source, value])
+
+
 class CategoryCrawl(object):
     URL = 'https://shopping.naver.com/'
     DELIMITER = 'cat_id='
@@ -31,9 +35,15 @@ class CategoryCrawl(object):
                 x = x + len(self.DELIMITER) - 1
                 return value[x + 1:len(value)]
 
-    def _insert(self, result_dict: dict):
+    def _insert(self, cid, name, paths: str):
         """ Mongo Database Insert """
-        return self.database_manager.insert_one_mongo('category', result_dict)
+        _category_document: dict = None
+
+        _category_document['cid'] = cid
+        _category_document['name'] = name
+        _category_document['paths'] = paths
+
+        return self.database_manager.insert_one_mongo('category', _category_document)
 
     def parse(self):
         self.driver.get(self.URL)
@@ -46,14 +56,7 @@ class CategoryCrawl(object):
             logging.error(str(e))
 
     def _parse_root(self, category: WebElement):
-        category_document: dict = {
-            'pid': str,
-            'cid': str,  # cat_id
-            'name': str,  # 이름
-            'paths': str,  # Materialized Path - delimiter = ,
-        }
-
-        category_document.clear()
+        self._category_document.clear()
 
         # Root 이름
         root_name: str = category.text
@@ -62,8 +65,6 @@ class CategoryCrawl(object):
         for exclude_category in self.crawl_config.exclude_category:
             if eq(root_name, exclude_category):
                 return None
-
-        parent_id = uuid.uuid4().hex
 
         class_att = category.get_attribute('class')
         click_xpath = '//*[@id="home_{0}"]'.format(class_att)
@@ -85,32 +86,41 @@ class CategoryCrawl(object):
                 self.driver.implicitly_wait(4)
                 element = self.driver.find_element_by_xpath(xpath_cate)
 
-        # Root -> MidChild
-        childCategoryItems = element.find_elements(By.CLASS_NAME, 'co_col')
+        # Root -> sub
+        sub_category = element.find_elements(By.CLASS_NAME, 'co_col')
 
-        self._parse_sub(childCategoryItems, parent_id)
+        self._parse_sub(sub_category, root_name)
 
-    def _parse_sub(self, child_category_list, parent_id):
-        result_item_list = list()
-
-        childCategory: WebElement
-        for childCategory in child_category_list:
-
+    def _parse_sub(self, sub_category, root_name):
+        sub_item: WebElement
+        for sub_item in sub_category:
             # 중간 카테고리
-            midCate: WebElement = childCategory.find_element_by_tag_name('strong')
+            sub_element: WebElement = sub_item.find_element_by_tag_name('strong')
             # name
-            mid_name = midCate.find_element_by_tag_name('a').text
+            _name = sub_element.find_element_by_tag_name('a').text
+            # paths
+            _paths = _join_path(',', root_name, _name)
             # href
-            mid_href = midCate.find_element_by_tag_name('a').get_attribute('href')
+            sub_href = sub_element.find_element_by_tag_name('a').get_attribute('href')
+            # cid
+            _cid = self._parse_cat_id(sub_href)
+            # cid, name, paths
+            self._insert(_cid, _name, _paths)
 
             # 하위 카테고리 리스트
-            child_items: WebElement = childCategory.find_elements(By.TAG_NAME, 'li')
+            child_items: WebElement = sub_item.find_elements(By.TAG_NAME, 'li')
+            self._parse_child(child_items, _paths)
 
-            self._parse_child(child_items)
-
-    def _parse_child(self, child_items):
+    def _parse_child(self, child_items, sub_paths):
         child_item: WebElement
-
         for child_item in child_items:
-            text = child_item.text  # 이름
-            href = child_item.find_element_by_tag_name('a').get_attribute('href')
+            # name
+            _name = child_item.text  # 이름
+            # paths
+            _paths = _join_path(',', sub_paths, _name)
+            # href
+            _href = child_item.find_element_by_tag_name('a').get_attribute('href')
+            # cid
+            _cid = self._parse_cat_id(_href)
+
+            self._insert(_cid, _name, _paths)
