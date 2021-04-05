@@ -6,22 +6,22 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 
 from proj.common.config.configmanager import CrawlConfiguration
+from proj.common.driver.seleniumdriver import Selenium
+from proj.common.config.configmanager import ConfigManager, CrawlConfiguration
+from proj.common.database.dbmanager import DatabaseManager
+
 
 class ProductCrawl:
     url: str
     cat_id: str
 
-    def __init__(self, driver, json_data, func, crawl_config):
-        # CHROMEDRIVER_PATH = r'C:\Users\지주연\PycharmProjects\crawlingApp\proj\resource\chromedriver.exe'
-        # chrome_options = Options()
-        # chrome_options.add_argument("--headless")
-        # chrome_options.add_argument("--no-sandbox")
-        # chrome_options.add_argument("--disable-gpu")
-        # # chrome_options.add_argument( f"--window-size={ WINDOW_SIZE }" )
-        #
-        # self.driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, chrome_options=chrome_options)
-        self.driver = driver
-        self.crawl_config: CrawlConfiguration = crawl_config
+    def __init__(self):
+        # 크롬 selenium Driver - singleton
+        self.driver = Selenium().driver
+        # 크롤링 설정 정보 관리 - singleton
+        self.crawl_config: CrawlConfiguration = ConfigManager().crawl_config_object
+        # Database manager - 데이터 조회 및 저장을 여기서 합니다. - singleton
+        self.database_manager = DatabaseManager()
 
         self.paging_count = self.crawl_config.crawl_page_range
 
@@ -31,8 +31,9 @@ class ProductCrawl:
                             self.crawl_config.crawl_count)
                         ]
 
-        self.data = json_data
-        self.insert_fuc = func
+        self.data = None
+
+        self.insert_fuc = None
 
         self.get_bigCategory_data()
 

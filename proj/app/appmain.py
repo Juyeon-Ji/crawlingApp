@@ -7,7 +7,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 baseprojectpath = os.path.dirname(
-                os.path.dirname(os.path.dirname(__file__)) 
+                os.path.dirname(os.path.dirname(__file__))
             )
 baseprojectpathexists = False
 for syspath in sys.path:
@@ -23,6 +23,7 @@ from proj.app.crawl.productcrawl import ProductCrawl
 from proj.common.database.dbmanager import DatabaseManager
 from proj.common.config.configmanager import ConfigManager
 from proj.common.driver.seleniumdriver import Selenium
+
 
 def close(driver):
     if driver is not None:
@@ -62,8 +63,10 @@ def main():
 
     logger.info('Crawl Test')
 
+    driver = Selenium().driver
+
     configmanager = ConfigManager()
-    databasemanager = DatabaseManager(configmanager.database_object_list)
+    databasemanager = DatabaseManager()
 
     # CHROMEDRIVER_PATH = '../resource/chromedriver.exe'
     # # CHROMEDRIVER_PATH = 'D:/_1.project/WEBuilder/python_project/git_crawling/crawlingApp/proj/resource/chromedriver.exe'
@@ -73,23 +76,17 @@ def main():
     # chrome_options.add_argument("--no-sandbox")
     # chrome_options.add_argument("--disable-gpu")
     # # chrome_options.add_argument( f"--window-size={ WINDOW_SIZE }" )
-    #
+
     # driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, chrome_options=chrome_options)
-    driver = Selenium().driver
-    categorycrawl = CategoryCrawl(driver=driver,
-                                  crawl_config=configmanager.crawl_config_object)
 
-    categorycrawl.parse(databasemanager.insert_one_mongo)
+    categorycrawl = CategoryCrawl()
 
-    # json_datas = databasemanager.find_all_mongo('category')
-    #
-    # category = ProductCrawl(driver=driver,
-    #                         json_data=json_datas,
-    #                         func=databasemanager.insert_many_mongo,
-    #                         crawl_config=configmanager.crawl_config_object)
+    categorycrawl.parse()
+
+    category = ProductCrawl()
 
     logger.info('Crawl Test End')
     close(driver)
 
-if __name__ == '__main__': 
+if __name__ == '__main__':
     main()

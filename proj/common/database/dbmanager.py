@@ -2,7 +2,8 @@ from enum import Enum, auto
 
 
 from proj.common.database.mogodb import MongoDBManager
-from proj.common.config.configmanager import DatabaseObject, DatabaseType
+from proj.common.config.configmanager import ConfigManager, DatabaseObject, DatabaseType
+from proj.common.util import Singleton
 
 HOST = 'mongodb://192.168.137.223:27017/'
 
@@ -12,12 +13,12 @@ class TableType(Enum):
     Detail = auto()
 
 
-class DatabaseManager:
-    def __init__(self, database_list):
+class DatabaseManager(object, metaclass=Singleton):
+    def __init__(self):
         # Mongo DB
         self._mongoDB: MongoDBManager = None
 
-        self.database_list: [DatabaseObject] = database_list
+        self.database_list: [DatabaseObject] = ConfigManager().database_object_list
 
         self._load()
 

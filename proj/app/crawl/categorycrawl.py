@@ -6,16 +6,23 @@ from selenium.webdriver.common.by import By
 
 from selenium.webdriver.remote.webelement import WebElement
 
-from proj.common.config.configmanager import CrawlConfiguration
+from proj.common.driver.seleniumdriver import Selenium
+from proj.common.database.dbmanager import DatabaseManager
+from proj.common.config.configmanager import CrawlConfiguration, ConfigManager
+
 
 
 class CategoryCrawl(object):
     URL = 'https://shopping.naver.com/'
     DELIMITER = 'cat_id='
 
-    def __init__(self, driver, crawl_config):
-        self.driver = driver
-        self.crawl_config: CrawlConfiguration = crawl_config
+    def __init__(self):
+        # 크롬 selenium Driver - singleton
+        self.driver = Selenium().driver
+        # 크롤링 설정 정보 관리 - singleton
+        self.crawl_config: CrawlConfiguration = ConfigManager().crawl_config_object
+        # Database manager - 데이터 조회 및 저장을 여기서 합니다. - singleton
+        self.database_manager = DatabaseManager()
 
     def _parse_cat_id(self, value: str) -> str:
         if value is not None:
@@ -25,7 +32,11 @@ class CategoryCrawl(object):
                 x = x + len(self.DELIMITER) - 1
                 return value[x + 1:len(value)]
 
-    def parse(self, func):
+    def _insert(self, result_dict: dict):
+        """ Mongo Database Insert """
+        return self.database_manager.insert_one_mongo('category', result_dict)
+
+    def parse(self):
         self.driver.get(self.URL)
 
         try:
@@ -34,7 +45,8 @@ class CategoryCrawl(object):
                 # className = co_menu_wear
 
                 if result_dict is not None:
-                    func('category', result_dict)
+                    self._insert('category', result_dict)
+
 
         except Exception as e:
             logging.debug(str(e))

@@ -1,6 +1,8 @@
 import json
 from enum import Enum, auto
 
+from proj.common.util import Singleton
+
 
 class DatabaseType(Enum):
     MONGO = auto()
@@ -24,11 +26,14 @@ class CrawlConfiguration:
     crawl_page_range = 0
     crawl_sleep_time = 0
     crawl_big_category = False
-    crawl_detal_category = True
+    crawl_detail_category = True
     exclude_category: list
 
 
-class ConfigManager(object):
+class ConfigManager(object, metaclass=Singleton):
+    database_object_list: [DatabaseObject]
+    crawl_config_object: CrawlConfiguration
+
     def __init__(self):
         self.database_object_list: [DatabaseObject] = list()
         self.crawl_config_object: CrawlConfiguration = None
@@ -74,5 +79,5 @@ class ConfigManager(object):
             self.crawl_config_object.crawl_page_range = crawl_config.get('crawl-page-range')
             self.crawl_config_object.crawl_sleep_time = crawl_config.get('crawl-sleep-time')
             self.crawl_config_object.crawl_big_category = crawl_config.get('crawl-big-category')
-            self.crawl_config_object.crawl_detal_category = crawl_config.get('crawl-detail-category')
+            self.crawl_config_object.crawl_detail_category = crawl_config.get('crawl-detail-category')
             self.crawl_config_object.exclude_category = crawl_config.get('exclude-category')
