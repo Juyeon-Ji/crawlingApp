@@ -54,7 +54,6 @@ class MongoDBManager(object):
 
     def insert_many(self, collection: str, value):
         if self.isConnect:
-
             return self._db[collection].insert_many(value)
 
     def find_all(self, collection: str):

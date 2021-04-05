@@ -23,26 +23,50 @@ from proj.app.crawl.productcrawl import ProductCrawl
 from proj.common.database.dbmanager import DatabaseManager
 from proj.common.config.configmanager import ConfigManager
 
+
 def close(driver):
     if driver is not None:
         driver.close()
 
+
+def make_logger(name=None):
+    # 1 logger instance를 만든다.
+    logger = logging.getLogger(name)
+
+    # 2 logger의 level을 가장 낮은 수준인 DEBUG로 설정해둔다.
+    logger.setLevel(logging.INFO)
+
+    # 3 formatter 지정
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+    # 4 handler instance 생성
+    console = logging.StreamHandler()
+    file_handler = logging.FileHandler(filename="test.log")
+
+    # 5 handler 별로 다른 level 설정
+    console.setLevel(logging.INFO)
+    file_handler.setLevel(logging.DEBUG)
+
+    # 6 handler 출력 format 지정
+    console.setFormatter(formatter)
+    file_handler.setFormatter(formatter)
+
+    # 7 logger에 handler 추가
+    logger.addHandler(console)
+    logger.addHandler(file_handler)
+
+    return logger
+
 def main():
-    logging.info('Crawl Test')
+    logger = make_logger()
+
+    logger.info('Crawl Test')
+
     configmanager = ConfigManager()
     databasemanager = DatabaseManager(configmanager.database_object_list)
-    # proejct_path = os.path.normpath(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))).replace('\\', '/')
-    # print(proejct_path)
 
-
-    # os.chdir(proejct_path)
-    # D:\_1.project\WEBuilder\python_project\git_crawling\crawlingApp\proj\resource\application.json
-
-    # CHROMEDRIVER_PATH = Path.joinpath(proejct_path, r'/resource/chromedriver.exe')
-    CHROMEDRIVER_PATH = 'D:/_1.project/WEBuilder/python_project/git_crawling/crawlingApp/proj/resource/chromedriver.exe'
-
-    print(CHROMEDRIVER_PATH)
-    WINDOW_SIZE = "1920,1080"
+    CHROMEDRIVER_PATH = '../resource/chromedriver.exe'
+    # CHROMEDRIVER_PATH = 'D:/_1.project/WEBuilder/python_project/git_crawling/crawlingApp/proj/resource/chromedriver.exe'
 
     chrome_options = Options()
     chrome_options.add_argument("--headless")
@@ -55,7 +79,7 @@ def main():
     categorycrawl = CategoryCrawl(driver=driver,
                                   crawl_config=configmanager.crawl_config_object)
 
-    categorycrawl.parse(databasemanager.insert_many_mongo)
+    categorycrawl.parse(databasemanager.insert_one_mongo)
 
     json_datas = databasemanager.find_all_mongo('category')
 
@@ -64,7 +88,7 @@ def main():
                             func=databasemanager.insert_many_mongo,
                             crawl_config=configmanager.crawl_config_object)
 
-    logging.info('Crawl Test End')
+    logger.info('Crawl Test End')
     close(driver)
 
 if __name__ == '__main__': 
