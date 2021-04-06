@@ -11,6 +11,11 @@ from common.config.configmanager import CrawlConfiguration, ConfigManager
 
 
 def _join_path(token, source: str, value: str) -> str:
+    if not source.startswith(token):
+        source += ','
+    if not value.endswith(token):
+        value += ','
+
     return token.join([source, value])
 
 
@@ -22,7 +27,7 @@ class CategoryCrawl(object):
         # 크롬 selenium Driver - singleton
         self.driver = Selenium().driver
         # 크롤링 설정 정보 관리 - singleton
-        self.crawl_config: CrawlConfiguration = ConfigManager().crawl_config_object
+        self.crawl_config: CrawlConfiguration = ConfigManager().crawl_config
         # Database manager - 데이터 조회 및 저장을 여기서 합니다. - singleton
         self.database_manager = DatabaseManager()
 
@@ -36,7 +41,7 @@ class CategoryCrawl(object):
 
     def _insert(self, cid, name, paths: str):
         """ Mongo Database Insert """
-        _category_document: dict = None
+        _category_document = dict()
 
         _category_document['cid'] = cid
         _category_document['name'] = name
@@ -55,8 +60,6 @@ class CategoryCrawl(object):
             logging.error(str(e))
 
     def _parse_root(self, category: WebElement):
-        self._category_document.clear()
-
         # Root 이름
         root_name: str = category.text
         logging.info('rootName : ' + root_name)
@@ -85,6 +88,7 @@ class CategoryCrawl(object):
                 self.driver.implicitly_wait(4)
                 element = self.driver.find_element_by_xpath(xpath_cate)
 
+        self._insert(None, root_name, None)
         # Root -> sub
         sub_category = element.find_elements(By.CLASS_NAME, 'co_col')
 

@@ -7,7 +7,7 @@
             "port": 27017,
             "username": "",
             "password": "",
-            "database-name": "crawl_database_test",
+            "database-name": "crawl_database",
             "tables":{
                 "table-1": "category",
                 "table-2": "product"
@@ -28,7 +28,7 @@
         }
     ],
     "crawl_config": {
-        "exclude-category": ["패션의류", "패션잡화"],
+        "exclude-category": ["패션의류", "패션잡화", "화장품/미용","출산/육아","식품","스포츠/레저","생활/건강","여가/생활편의","면세점"],
         "crawl-big-category": true,
         "crawl-detail-category": false,
         "crawl-count": 20,

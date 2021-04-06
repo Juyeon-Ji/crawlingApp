@@ -1,22 +1,17 @@
-from enum import Enum, auto
+""" DB 연결 및 관리, 생성 하는 모듈
 
-
-from common.database import MongoDBManager
+"""
+from common.database.mogodb import MongoDBManager
 from common.config.configmanager import ConfigManager, DatabaseObject, DatabaseType
 from common.util import Singleton
 
-HOST = 'mongodb://192.168.137.223:27017/'
 
+class DatabaseManager(metaclass=Singleton):
+    """ 여러 데이터 베이스를 한곳에서 관리하기 위한 Class"""
 
-class TableType(Enum):
-    Category = auto()
-    Detail = auto()
-
-
-class DatabaseManager(object, metaclass=Singleton):
     def __init__(self):
         # Mongo DB
-        self._mongoDB: MongoDBManager = None
+        self._mongo_db: MongoDBManager = None
 
         self.database_list: [DatabaseObject] = ConfigManager().database_object_list
 
@@ -26,23 +21,45 @@ class DatabaseManager(object, metaclass=Singleton):
         for item in self.database_list:
             database: DatabaseObject = item
             if DatabaseType.MONGO == database.database_type:
-                self._mongoDB = MongoDBManager(host=database.host,
-                                               database=database.database_name,
-                                               collection=database.tables)
+                self._mongo_db = MongoDBManager(host=database.host,
+                                                database=database.database_name,
+                                                collection=database.tables)
 
             elif DatabaseType.ELASTIC == database.database_type:
                 pass
 
     def close(self):
-        if self._mongoDB is not None:
-            self._mongoDB.close()
+        """ DB를 닫는다. """
+        if self._mongo_db is not None:
+            self._mongo_db.close()
 
     def insert_one_mongo(self, collection: str, value) -> bool:
-        return self._mongoDB.insert_one(collection, value)
+        """ Insert One Document
+        :param value: 저장할 값 (dict)
+        :param collection: collection 이름
+
+        collection 이름에 맞춰 DB에 저장
+
+        :return  InsertOneResult """
+        return self._mongo_db.insert_one(collection, value)
 
     def insert_many_mongo(self, collection: str, value) -> bool:
-        return self._mongoDB.insert_many(collection, value)
+        """ Insert many Document
+        :param value: 저장할 값 (dict)
+        :param collection: collection 이름
+
+        collection 이름에 맞춰 DB에 저장
+
+        :return InsertManyResult
+        """
+        return self._mongo_db.insert_many(collection, value)
 
     def find_all_mongo(self, collection: str):
-        return self._mongoDB.find_all(collection)
+        """ Find All Documnet
+        :param collection: collection 이름
 
+        collection 이름에 맞춰 DB에서 결과 조회
+
+        :return json string
+        """
+        return self._mongo_db.find_all(collection)

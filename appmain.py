@@ -18,6 +18,8 @@ def close(driver):
     if driver is not None:
         driver.close()
 
+        driver.quit()
+
 
 def make_logger(name=None):
     """ make Logger
@@ -34,7 +36,7 @@ def make_logger(name=None):
 
     # 4 handler instance 생성
     console = logging.StreamHandler()
-    file_handler = logging.FileHandler(filename="proj/app/test.log")
+    file_handler = logging.FileHandler(filename="test.log")
 
     # 5 handler 별로 다른 level 설정
     console.setLevel(logging.INFO)
@@ -63,7 +65,7 @@ def main():
 
     CategoryCrawl().parse()
 
-    ProductCrawl()
+    # ProductCrawl()
 
     logger.info('Crawl Test End')
     close(driver)
