@@ -22,6 +22,7 @@ class DatabaseObject(object):
 
 
 class CrawlConfiguration:
+    crawl_category = False
     crawl_count: int = 0
     crawl_page_range = 0
     crawl_sleep_time = 0
@@ -40,6 +41,11 @@ class ConfigManager(object, metaclass=Singleton):
 
         self._load()
 
+        self.save()
+
+    def save(self):
+        print(json.JSONEncoder.default(self.database_object_list))
+
     def _load(self):
         path = '../resource/application.json'
         with open(path, 'r', encoding='utf-8') as f:
@@ -53,7 +59,6 @@ class ConfigManager(object, metaclass=Singleton):
 
         crawl_config = json_load.get('crawl_config')
         self._crawl_config_parse(crawl_config)
-        pass
 
     def _database_parse(self, database_list: list):
         if database_list is not None:

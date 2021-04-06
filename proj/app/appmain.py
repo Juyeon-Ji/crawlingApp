@@ -79,11 +79,11 @@ def main():
 
     # driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, chrome_options=chrome_options)
 
-    categorycrawl = CategoryCrawl()
-
-    categorycrawl.parse()
-
-    category = ProductCrawl()
+    # categorycrawl = CategoryCrawl()
+    #
+    # categorycrawl.parse()
+    #
+    # category = ProductCrawl()
 
     logger.info('Crawl Test End')
     close(driver)
