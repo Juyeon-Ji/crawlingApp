@@ -41,11 +41,6 @@ class ConfigManager(object, metaclass=Singleton):
 
         self._load()
 
-        self.save()
-
-    def save(self):
-        print(json.JSONEncoder.default(self.database_object_list))
-
     def _load(self):
         path = '../resource/application.json'
         with open(path, 'r', encoding='utf-8') as f:

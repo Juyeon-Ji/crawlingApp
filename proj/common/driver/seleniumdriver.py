@@ -20,3 +20,10 @@ class Selenium(object, metaclass=Singleton):
         _CHROMEDRIVER_PATH = '../resource/chromedriver.exe'
         self.driver = webdriver.Chrome(executable_path=_CHROMEDRIVER_PATH, chrome_options=chrome_options)
 
+    def close(self):
+        if self.driver is not None:
+            self.driver.close()
+
+    def quit(self):
+        if self.driver is not None:
+            self.quit()

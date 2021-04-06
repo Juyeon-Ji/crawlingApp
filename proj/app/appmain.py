@@ -1,24 +1,26 @@
+"""
+use module
+import os
+"""
 import os
 import sys
 import logging
-from pathlib import Path
-
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 
 baseprojectpath = os.path.dirname(
-                os.path.dirname(os.path.dirname(__file__))
-            )
-baseprojectpathexists = False
+    os.path.dirname(os.path.dirname(__file__))
+)
+
+BASE_PATH_EXISTS = False
+
 for syspath in sys.path:
-    if baseprojectpath == syspath :
-        baseprojectpathexists = True
+    if baseprojectpath == syspath:
+        BASE_PATH_EXISTS = True
         break
 
-if not baseprojectpathexists :
+if not BASE_PATH_EXISTS:
     sys.path.append(baseprojectpath)
 
-from proj.app.crawl.categorycrawl import CategoryCrawl
+from proj.app.crawl.categorycrawl import CategoryCrawl  # pylint: disable
 from proj.app.crawl.productcrawl import ProductCrawl
 from proj.common.database.dbmanager import DatabaseManager
 from proj.common.config.configmanager import ConfigManager
@@ -26,11 +28,17 @@ from proj.common.driver.seleniumdriver import Selenium
 
 
 def close(driver):
+    """ Selenium Driver 를 닫는다.
+        :return None
+    """
     if driver is not None:
         driver.close()
 
 
 def make_logger(name=None):
+    """ make Logger
+        :return logger
+    """
     # 1 logger instance를 만든다.
     logger = logging.getLogger(name)
 
@@ -58,6 +66,7 @@ def make_logger(name=None):
 
     return logger
 
+
 def main():
     logger = make_logger()
 
@@ -65,28 +74,16 @@ def main():
 
     driver = Selenium().driver
 
-    configmanager = ConfigManager()
-    databasemanager = DatabaseManager()
+    ConfigManager()
+    DatabaseManager()
 
-    # CHROMEDRIVER_PATH = '../resource/chromedriver.exe'
-    # # CHROMEDRIVER_PATH = 'D:/_1.project/WEBuilder/python_project/git_crawling/crawlingApp/proj/resource/chromedriver.exe'
-    #
-    # chrome_options = Options()
-    # chrome_options.add_argument("--headless")
-    # chrome_options.add_argument("--no-sandbox")
-    # chrome_options.add_argument("--disable-gpu")
-    # # chrome_options.add_argument( f"--window-size={ WINDOW_SIZE }" )
+    CategoryCrawl().parse()
 
-    # driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, chrome_options=chrome_options)
-
-    # categorycrawl = CategoryCrawl()
-    #
-    # categorycrawl.parse()
-    #
-    # category = ProductCrawl()
+    ProductCrawl()
 
     logger.info('Crawl Test End')
     close(driver)
+
 
 if __name__ == '__main__':
     main()
