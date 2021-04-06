@@ -22,7 +22,7 @@ if not BASE_PATH_EXISTS:
 
 from crawl.categorycrawl import CategoryCrawl  # pylint: disable
 from crawl.productcrawl import ProductCrawl
-from common.database import DatabaseManager
+from common.database.dbmanager import DatabaseManager
 from common.config.configmanager import ConfigManager
 from common.driver.seleniumdriver import Selenium
 
