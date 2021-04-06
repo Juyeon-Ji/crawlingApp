@@ -2,23 +2,7 @@
 use module
 import os
 """
-import os
-import sys
 import logging
-
-baseprojectpath = os.path.dirname(
-    os.path.dirname(os.path.dirname(__file__))
-)
-
-BASE_PATH_EXISTS = False
-
-for syspath in sys.path:
-    if baseprojectpath == syspath:
-        BASE_PATH_EXISTS = True
-        break
-
-if not BASE_PATH_EXISTS:
-    sys.path.append(baseprojectpath)
 
 from crawl.categorycrawl import CategoryCrawl  # pylint: disable
 from crawl.productcrawl import ProductCrawl

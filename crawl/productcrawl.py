@@ -1,19 +1,12 @@
 import time
+import logging
 
-from selenium import webdriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.keys import Keys
 
-# from proj.common.driver.seleniumdriver import Selenium
-# 통합 실행 용
-# from proj.common.config.configmanager import ConfigManager, CrawlConfiguration
-# from proj.common.database.dbmanager import DatabaseManager
-
-# 개별 Test용
-from selenium.webdriver.chrome.options import Options
-
-import logging
-
+from common.config.configmanager import ConfigManager, CrawlConfiguration
+from common.database.dbmanager import DatabaseManager
+from common.driver.seleniumdriver import Selenium
 
 class ProductCrawl():
     url: str
@@ -21,22 +14,13 @@ class ProductCrawl():
     catId: str
 
     def __init__(self, start_by_own: bool):
-        if start_by_own:
-            CHROMEDRIVER_PATH = r'C:\Users\지주연\PycharmProjects\crawlingApp\proj\resource\chromedriver.exe'
-            chrome_options = Options()
-            chrome_options.add_argument("--headless")
-            chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--disable-gpu")
-            self.driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, chrome_options=chrome_options)
-            self.f = open("parsingData.csv", "w")
-        else:
-            pass
-            # # 크롬 selenium Driver - singleton
-            # self.driver = Selenium().driver
-            # # 크롤링 설정 정보 관리 - singleton
-            # self.crawl_config: CrawlConfiguration = ConfigManager().crawl_config_object
-            # # Database manager - 데이터 조회 및 저장을 여기서 합니다. - singleton
-            # self.database_manager = DatabaseManager()
+
+        # 크롬 selenium Driver - singleton
+        self.driver = Selenium().driver
+        # 크롤링 설정 정보 관리 - singleton
+        self.crawl_config: CrawlConfiguration = ConfigManager().crawl_config_object
+        # Database manager - 데이터 조회 및 저장을 여기서 합니다. - singleton
+        self.database_manager = DatabaseManager()
 
         self.paging_count = 2 # self.crawl_config.crawl_page_range
         self.pagingSize = 20 # self.crawl_config.crawl_count

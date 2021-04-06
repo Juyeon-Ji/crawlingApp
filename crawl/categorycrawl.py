@@ -6,7 +6,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 
 from common.driver.seleniumdriver import Selenium
-from common.database import DatabaseManager
+from common.database.dbmanager import DatabaseManager
 from common.config.configmanager import CrawlConfiguration, ConfigManager
 
 
