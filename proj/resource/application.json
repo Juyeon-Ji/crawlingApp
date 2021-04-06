@@ -31,8 +31,8 @@
         "exclude-category": ["패션의류", "패션잡화"],
         "crawl-big-category": true,
         "crawl-detail-category": false,
-        "crawl-count": 40,
-        "crawl-page-range": 10,
+        "crawl-count": 20,
+        "crawl-page-range": 2,
         "crawl-sleep-time": 12
     }
 }
