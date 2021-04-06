@@ -4,7 +4,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.webdriver import WebDriver
 
-from proj.common.util import Singleton
+from common.util import Singleton
 
 
 class Selenium(object, metaclass=Singleton):

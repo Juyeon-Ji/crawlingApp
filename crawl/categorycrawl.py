@@ -1,4 +1,3 @@
-import uuid
 import logging
 from operator import eq
 from selenium.webdriver.common.keys import Keys
@@ -6,9 +5,9 @@ from selenium.webdriver.common.by import By
 
 from selenium.webdriver.remote.webelement import WebElement
 
-from proj.common.driver.seleniumdriver import Selenium
-from proj.common.database.dbmanager import DatabaseManager
-from proj.common.config.configmanager import CrawlConfiguration, ConfigManager
+from common.driver.seleniumdriver import Selenium
+from common.database import DatabaseManager
+from common.config.configmanager import CrawlConfiguration, ConfigManager
 
 
 def _join_path(token, source: str, value: str) -> str:

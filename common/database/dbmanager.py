@@ -1,9 +1,9 @@
 from enum import Enum, auto
 
 
-from proj.common.database.mogodb import MongoDBManager
-from proj.common.config.configmanager import ConfigManager, DatabaseObject, DatabaseType
-from proj.common.util import Singleton
+from common.database import MongoDBManager
+from common.config.configmanager import ConfigManager, DatabaseObject, DatabaseType
+from common.util import Singleton
 
 HOST = 'mongodb://192.168.137.223:27017/'
 

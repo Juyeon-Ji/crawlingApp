@@ -20,11 +20,11 @@ for syspath in sys.path:
 if not BASE_PATH_EXISTS:
     sys.path.append(baseprojectpath)
 
-from proj.app.crawl.categorycrawl import CategoryCrawl  # pylint: disable
-from proj.app.crawl.productcrawl import ProductCrawl
-from proj.common.database.dbmanager import DatabaseManager
-from proj.common.config.configmanager import ConfigManager
-from proj.common.driver.seleniumdriver import Selenium
+from crawl.categorycrawl import CategoryCrawl  # pylint: disable
+from crawl.productcrawl import ProductCrawl
+from common.database import DatabaseManager
+from common.config.configmanager import ConfigManager
+from common.driver.seleniumdriver import Selenium
 
 
 def close(driver):
@@ -50,7 +50,7 @@ def make_logger(name=None):
 
     # 4 handler instance 생성
     console = logging.StreamHandler()
-    file_handler = logging.FileHandler(filename="test.log")
+    file_handler = logging.FileHandler(filename="proj/app/test.log")
 
     # 5 handler 별로 다른 level 설정
     console.setLevel(logging.INFO)

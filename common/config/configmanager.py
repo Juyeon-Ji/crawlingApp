@@ -1,7 +1,7 @@
 import json
 from enum import Enum, auto
 
-from proj.common.util import Singleton
+from common.util import Singleton
 
 
 class DatabaseType(Enum):

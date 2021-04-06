@@ -1,7 +1,6 @@
 import os
 import sys
 import unittest
-import json
 
 baseprojectpath = os.path.dirname(
                 os.path.dirname(os.path.dirname(__file__))
@@ -15,7 +14,7 @@ for syspath in sys.path:
 if not baseprojectpathexists:
     sys.path.append(baseprojectpath)
 
-from proj.common.config.configmanager import ConfigManager, CrawlConfiguration
+from common.config.configmanager import ConfigManager
 
 
 class ConfigManagerTest(unittest.TestCase):
