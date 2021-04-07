@@ -63,9 +63,10 @@ def main():
     ConfigManager()
     DatabaseManager()
 
-    CategoryCrawl().parse()
+    # 카테고리 파싱 주석
+    # CategoryCrawl().parse()
 
-    # ProductCrawl()
+    ProductCrawl()
 
     logger.info('Crawl Test End')
     close(driver)
