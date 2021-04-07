@@ -16,14 +16,6 @@ class Utils:
     def join_path(cls, token, source: str, value: str) -> str:
         return token.join([source, value])
 
-    def parse_cat_id(self, value: str) -> str:
-        if value is not None:
-            x = 0
-            x = value.find(self.DELIMITER)
-            if x != -1:
-                x = x + len(self.DELIMITER) - 1
-                return value[x + 1:len(value)]
-
     @classmethod
     def separate_right(cls, value, delimiter) -> str:
         if value is not None:
