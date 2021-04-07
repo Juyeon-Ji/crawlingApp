@@ -46,8 +46,11 @@ class MongoDBManager:
         if self._client is not None:
             self._client.close()
 
-    def update(self, collection: str, value):
-        pass
+    def update(self, collection: str, selection, data, upsert: bool = True):
+        return self._db[collection].update(selection, data, upsert)
+
+    def delete_one(self, collection: str, query: dict):
+        return self._db[collection].delete_one(query)
 
     def insert_one(self, collection: str, value: dict) -> bool:
         """ Insert One Document
