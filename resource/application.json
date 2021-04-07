@@ -28,7 +28,8 @@
         }
     ],
     "crawl_config": {
-        "exclude-category": ["패션의류", "패션잡화", "화장품/미용","출산/육아","식품","스포츠/레저","생활/건강","여가/생활편의","면세점"],
+        "exclude-category": ["패션의류", "패션잡화", "화장품/미용","출산/육아","면세점"],
+        "crawl-category-list": [""],
         "crawl-big-category": true,
         "crawl-detail-category": false,
         "crawl-count": 20,

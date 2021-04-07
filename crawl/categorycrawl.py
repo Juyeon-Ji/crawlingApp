@@ -1,3 +1,5 @@
+import re
+import time
 import logging
 from operator import eq
 from selenium.webdriver.common.keys import Keys
@@ -5,6 +7,7 @@ from selenium.webdriver.common.by import By
 
 from selenium.webdriver.remote.webelement import WebElement
 
+from common.util import Utils
 from common.driver.seleniumdriver import Selenium
 from common.database.dbmanager import DatabaseManager
 from common.config.configmanager import CrawlConfiguration, ConfigManager
@@ -49,6 +52,7 @@ class CategoryCrawl(object):
 
         try:
             for category in self.driver.find_elements_by_xpath('//*[@id="home_category_area"]/div[1]/ul/li'):
+                time.sleep(1)
                 self._parse_root(category)
 
         except Exception as e:
@@ -56,7 +60,9 @@ class CategoryCrawl(object):
 
     def _parse_root(self, category: WebElement):
         # Root 이름
-        root_name: str = category.text
+        text: str = category.text
+        root_name = text.replace('/', '-')
+
         logging.info('rootName : ' + root_name)
 
         for exclude_category in self.crawl_config.exclude_category:
@@ -66,10 +72,12 @@ class CategoryCrawl(object):
         class_att = category.get_attribute('class')
         click_xpath = '//*[@id="home_{0}"]'.format(class_att)
 
-        self.driver.implicitly_wait(3)
+        self.driver.implicitly_wait(5)
         # 먼저 클릭해봄.
         self.driver.find_element_by_xpath(click_xpath).send_keys(Keys.ENTER)
         # class_att 맞춰 내부 xPath 설정
+        time.sleep(1)
+
         xpath_cate = '//*[@id="home_{0}_inner"]/div[1]'.format(class_att)
 
         # Root Category
@@ -81,6 +89,7 @@ class CategoryCrawl(object):
                 # 클릭 이벤트가 정상적으로 안들어오면 계속 클릭하자..
                 self.driver.find_element_by_xpath(click_xpath).send_keys(Keys.ENTER)
                 self.driver.implicitly_wait(4)
+                time.sleep(1)
                 element = self.driver.find_element_by_xpath(xpath_cate)
 
         self._insert(None, root_name, None)
@@ -92,12 +101,14 @@ class CategoryCrawl(object):
     def _parse_sub(self, sub_category, root_name):
         sub_item: WebElement
         for sub_item in sub_category:
+            time.sleep(1)
             # 중간 카테고리
             sub_element: WebElement = sub_item.find_element_by_tag_name('strong')
             # name
             _name = sub_element.find_element_by_tag_name('a').text
+            _name = re.sub("전체보기", "", _name)
             # paths
-            _paths = _join_path(',', root_name, _name)
+            _paths = Utils.join_path(token='#', source=root_name, value=_name)
             # href
             sub_href = sub_element.find_element_by_tag_name('a').get_attribute('href')
             # cid
@@ -106,16 +117,17 @@ class CategoryCrawl(object):
             self._insert(_cid, _name, _paths)
 
             # 하위 카테고리 리스트
-            child_items: WebElement = sub_item.find_elements(By.TAG_NAME, 'li')
+            child_items: [WebElement] = sub_item.find_elements(By.TAG_NAME, 'li')
             self._parse_child(child_items, _paths)
 
     def _parse_child(self, child_items, sub_paths):
         child_item: WebElement
         for child_item in child_items:
+            time.sleep(1)
             # name
             _name = child_item.text  # 이름
             # paths
-            _paths = _join_path(',', sub_paths, _name)
+            _paths = Utils.join_path(token='#', source=sub_paths, value=_name)
             # href
             _href = child_item.find_element_by_tag_name('a').get_attribute('href')
             # cid

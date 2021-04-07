@@ -82,3 +82,7 @@ class MongoDBManager:
         if self.is_connect:
             return self._db[collection].find()
         return None
+
+    def find(self, collection, query: str):
+        if self.is_connect:
+            return self._db[collection].find(query)

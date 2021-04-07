@@ -18,11 +18,13 @@ if not baseprojectpathexists :
     sys.path.append(baseprojectpath)
 
 HOST = "mongodb://192.168.137.223:27017/"
-class DatabseManagerTest(unittest.TestCase):
-    def setUp(self):
-        self.client : MongoClient = MongoClient(HOST)
 
-        self._db: Database = self.client.crawl_database_test
+
+class DatabaseManagerTest(unittest.TestCase):
+    def setUp(self):
+        self.client: MongoClient = MongoClient(HOST)
+
+        self._db: Database = self.client.crawl_database
 
         self._col: Collection = self._db.category
 
@@ -30,22 +32,19 @@ class DatabseManagerTest(unittest.TestCase):
 
     def tearDown(self):
         # self.client.drop_database("pymongo_db_test")
+        self.client.close()
         pass
-        
-    def fix_rows(self):
-        rows = [{'id':1, 'name':'John'}, 
-                {'id':2, 'name':'Jane'},]
-
-        return rows
 
     def test_find(self):
-        jsons = self._col.find()
+        keywordquery = {'paths': {'$regex': '(?=.*' + "#클렌징#" + ')'}}
+        jsons = self._col.find(keywordquery)
+        # jsons = self._col.find({"paths": "\\/\\#\\클렌징\\#\\/"})
+        # jsons = self._col.find({"name": "클렌징"})
         for json in jsons:
-
+            json['name']
             print(json)
 
         self.assertIsNotNone(jsons)
-
 
     # def test_insert_1(self):
     #     rows = self.fix_rows()

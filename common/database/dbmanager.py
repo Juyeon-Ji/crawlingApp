@@ -63,3 +63,11 @@ class DatabaseManager(metaclass=Singleton):
         :return json string
         """
         return self._mongo_db.find_all(collection)
+
+    def find(self, collection, query: str = None):
+        return self._mongo_db.find(collection, query)
+
+    @classmethod
+    def keyword_query(cls, field, keyword) -> dict:
+        return {field: {'$regex': '(?=.*' + keyword + ')'}}
+
