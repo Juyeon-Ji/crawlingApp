@@ -51,6 +51,10 @@ class ProductCrawl():
         except Exception as e:
             logging.exception(e)
 
+    def _category_generator(self):
+        for item in self.crawl_config.crawl_category:
+            query = self.database_manager.keyword_query('paths', item)
+            yield self.database_manager.find('category', query=query)
 
     def start_prasing_process(self, category_info = {}, paging_index = 1):
         '''파싱 프로세스 시작'''

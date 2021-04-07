@@ -40,9 +40,10 @@ class DatabaseManagerTest(unittest.TestCase):
         jsons = self._col.find(keywordquery)
         # jsons = self._col.find({"paths": "\\/\\#\\클렌징\\#\\/"})
         # jsons = self._col.find({"name": "클렌징"})
-        for json in jsons:
-            json['name']
-            print(json)
+
+        for item in self.crawl_config.crawl_category:
+            query = self.database_manager.keyword_query('paths', item)
+            yield self.database_manager.find('category', query=query)
 
         self.assertIsNotNone(jsons)
 

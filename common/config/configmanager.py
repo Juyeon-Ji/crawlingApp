@@ -37,13 +37,13 @@ class CrawlConfiguration:  # pylint: disable=too-few-public-methods
     """
     Crawl Config 정보에 대한 Dataclass
     """
-    crawl_category = False
     crawl_count: int = 0
     crawl_page_range = 0
     crawl_sleep_time = 0
     crawl_big_category = False
     crawl_detail_category = True
     exclude_category: list
+    crawl_category: list
 
 
 class ConfigManager(metaclass=Singleton):
@@ -133,3 +133,4 @@ class ConfigManager(metaclass=Singleton):
             self.crawl_config.crawl_big_category = crawl_config.get('crawl-big-category')
             self.crawl_config.crawl_detail_category = crawl_config.get('crawl-detail-category')
             self.crawl_config.exclude_category = crawl_config.get('exclude-category')
+            self.crawl_config.crawl_category = crawl_config.get('crawl-category-list')
