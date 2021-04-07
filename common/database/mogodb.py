@@ -46,6 +46,9 @@ class MongoDBManager:
         if self._client is not None:
             self._client.close()
 
+    def update(self, collection: str, value):
+        pass
+
     def insert_one(self, collection: str, value: dict) -> bool:
         """ Insert One Document
         :param value: 저장할 값 (dict)
@@ -83,10 +86,10 @@ class MongoDBManager:
             return self._db[collection].find()
         return None
 
-    def find(self, collection, query: str):
+    def find(self, collection, query: dict):
         if self.is_connect:
             return self._db[collection].find(query)
 
-    def count_document(self, collection, query: str):
+    def count_document(self, collection, query: dict):
         if self.is_connect:
             return self._db[collection].count_documents(query)

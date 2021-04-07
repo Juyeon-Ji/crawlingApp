@@ -64,16 +64,19 @@ class DatabaseManager(metaclass=Singleton):
         """
         return self._mongo_db.find_all(collection)
 
-    def find(self, collection, query: str = None):
+    def find(self, collection, query: dict = None):
         return self._mongo_db.find(collection, query)
 
-    def count_document(self, collection, query: str = None):
+    def count_document(self, collection, query: dict = None):
         return self._mongo_db.count_document(collection, query)
 
-    @classmethod
-    def keyword_query(cls, field, keyword) -> dict:
+    def count_document_exists(self, collection, field, value) -> bool:
+        return self._mongo_db.count_document(collection, self.find_query(field, value)) > 0
+
+    @staticmethod
+    def keyword_query(field, keyword) -> dict:
         return {field: {'$regex': '(?=.*' + keyword + ')'}}
 
-    @classmethod
-    def find_query(cls, field, keyword) -> dict:
+    @staticmethod
+    def find_query(field, keyword) -> dict:
         return {field: keyword}

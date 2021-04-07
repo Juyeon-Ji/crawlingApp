@@ -50,7 +50,7 @@ class CategoryCrawl(object):
     def _is_exists(self, cid):
         """MongoDB에 cid 값을 조회하여 조건에 맞는 document가 있는지 확인"""
         _query = self.database_manager.find_query('cid', cid)
-        return self.database_manager.count_document(_query) > 0
+        return self.database_manager.count_document_exists(_query)
 
     def parse(self):
         self.driver.get(self.URL)
