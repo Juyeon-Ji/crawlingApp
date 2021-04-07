@@ -13,5 +13,32 @@ class Singleton(type):
 
 class Utils:
     @classmethod
-    def string_join(cls, string: str) -> str:
-        return ''
+    def join_path(cls, token, source: str, value: str) -> str:
+        return token.join([source, value])
+
+    def parse_cat_id(self, value: str) -> str:
+        if value is not None:
+            x = 0
+            x = value.find(self.DELIMITER)
+            if x != -1:
+                x = x + len(self.DELIMITER) - 1
+                return value[x + 1:len(value)]
+
+    @classmethod
+    def separate_right(cls, value, delimiter) -> str:
+        if value is not None:
+            x = 0
+            x = value.find(delimiter)
+            if x != -1:
+                x = x + len(delimiter) - 1
+                return value[x + 1:len(value)]
+
+    @classmethod
+    def separate_left(cls, value, delimiter):
+        if value is not None:
+            x = 0
+            x = value.find(delimiter)
+            if x < 1:
+                return value
+            else:
+                return value[0: x]

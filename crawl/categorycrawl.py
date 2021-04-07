@@ -11,11 +11,6 @@ from common.config.configmanager import CrawlConfiguration, ConfigManager
 
 
 def _join_path(token, source: str, value: str) -> str:
-    if not source.startswith(token):
-        source += ','
-    if not value.endswith(token):
-        value += ','
-
     return token.join([source, value])
 
 
