@@ -52,6 +52,7 @@ class ProductCrawl():
             logging.exception(e)
 
     def _category_generator(self):
+        """:return category 목록들"""
         for item in self.crawl_config.crawl_category:
             query = self.database_manager.keyword_query('paths', item)
             yield self.database_manager.find('category', query=query)
