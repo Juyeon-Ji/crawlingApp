@@ -80,3 +80,4 @@ class DatabaseManager(metaclass=Singleton):
     @staticmethod
     def find_query(field, keyword) -> dict:
         return {field: keyword}
+
