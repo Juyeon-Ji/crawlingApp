@@ -67,7 +67,13 @@ class DatabaseManager(metaclass=Singleton):
     def find(self, collection, query: str = None):
         return self._mongo_db.find(collection, query)
 
+    def count_document(self, collection, query: str = None):
+        return self._mongo_db.count_document(collection, query)
+
     @classmethod
     def keyword_query(cls, field, keyword) -> dict:
         return {field: {'$regex': '(?=.*' + keyword + ')'}}
 
+    @classmethod
+    def find_query(cls, field, keyword) -> dict:
+        return {field: keyword}

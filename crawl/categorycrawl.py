@@ -47,6 +47,11 @@ class CategoryCrawl(object):
 
         return self.database_manager.insert_one_mongo('category', _category_document)
 
+    def _is_exists(self, cid):
+        """MongoDB에 cid 값을 조회하여 조건에 맞는 document가 있는지 확인"""
+        _query = self.database_manager.find_query('cid', cid)
+        return self.database_manager.count_document(_query) > 0
+
     def parse(self):
         self.driver.get(self.URL)
 
@@ -103,16 +108,22 @@ class CategoryCrawl(object):
         for sub_item in sub_category:
             time.sleep(1)
             # 중간 카테고리
+            # href
+            sub_href = sub_element.find_element_by_tag_name('a').get_attribute('href')
+            # cid
+            _cid = self._parse_cat_id(sub_href)
+
+            if self._is_exists(_cid):
+                time.sleep(1)
+                continue
+
             sub_element: WebElement = sub_item.find_element_by_tag_name('strong')
             # name
             _name = sub_element.find_element_by_tag_name('a').text
             _name = re.sub("전체보기", "", _name)
             # paths
             _paths = Utils.join_path(token='#', source=root_name, value=_name)
-            # href
-            sub_href = sub_element.find_element_by_tag_name('a').get_attribute('href')
-            # cid
-            _cid = self._parse_cat_id(sub_href)
+
             # cid, name, paths
             self._insert(_cid, _name, _paths)
 
@@ -124,13 +135,15 @@ class CategoryCrawl(object):
         child_item: WebElement
         for child_item in child_items:
             time.sleep(1)
-            # name
-            _name = child_item.text  # 이름
-            # paths
-            _paths = Utils.join_path(token='#', source=sub_paths, value=_name)
             # href
             _href = child_item.find_element_by_tag_name('a').get_attribute('href')
             # cid
             _cid = self._parse_cat_id(_href)
-
+            if self._is_exists(_cid):
+                time.sleep(1)
+                continue
+            # name
+            _name = child_item.text  # 이름
+            # paths
+            _paths = Utils.join_path(token='#', source=sub_paths, value=_name)
             self._insert(_cid, _name, _paths)

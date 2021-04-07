@@ -86,3 +86,7 @@ class MongoDBManager:
     def find(self, collection, query: str):
         if self.is_connect:
             return self._db[collection].find(query)
+
+    def count_document(self, collection, query: str):
+        if self.is_connect:
+            return self._db[collection].count_documents(query)

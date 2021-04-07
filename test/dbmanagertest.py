@@ -47,6 +47,15 @@ class DatabaseManagerTest(unittest.TestCase):
 
         self.assertIsNotNone(jsons)
 
+    def test_count_document(self):
+        field = 'cid'
+        keyword = '50000191'
+
+        # keywordquery = {'paths': {'$regex': '(?=.*' + "#클렌징#" + ')'}}
+
+        count = self._col.count_documents({field: keyword}) > 0
+        self.assertTrue(count)
+
     # def test_insert_1(self):
     #     rows = self.fix_rows()
     #     x = self._col.insert_many(rows)
