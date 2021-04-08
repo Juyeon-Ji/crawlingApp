@@ -73,6 +73,9 @@ class DatabaseManager(metaclass=Singleton):
     def find(self, collection, query: dict = None):
         return self._mongo_db.find(collection, query)
 
+    def find_one(self, collection, query: dict = None):
+        return self._mongo_db.find_one(collection, query)
+
     def count_document(self, collection, query: dict = None):
         return self._mongo_db.count_document(collection, query)
 
