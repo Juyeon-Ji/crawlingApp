@@ -8,13 +8,15 @@ import time
 import logging
 import random
 
+import datetime
+
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.keys import Keys
 
 from common.config.configmanager import ConfigManager, CrawlConfiguration
 from common.database.dbmanager import DatabaseManager
 from common.driver.seleniumdriver import Selenium
-
+from selenium.webdriver.common.action_chains import ActionChains
 
 class ProductCrawl():
     '''
@@ -26,7 +28,7 @@ class ProductCrawl():
 
     def __init__(self):
 
-        logging.debug('start product crawl')
+        logging.info('start product crawl')
         # 크롬 selenium Driver - singleton
         self.driver = Selenium().driver
 
@@ -48,7 +50,11 @@ class ProductCrawl():
         self.insert_fuc = None
         self.productInfo_arr = []
 
+        self.f = None
+        self.action = ActionChains
         self.start_process_get_category_data()
+
+        self.last_crawled_date_time = datetime.datetime.now()
 
     # 카테고리 데이터 가져오기 시작
     def start_process_get_category_data(self):
@@ -102,12 +108,12 @@ class ProductCrawl():
     def setting_for_parsing(self, page_number)-> [WebElement]:
         '''크롤링하기 위하 사전 작업: 스크롤 내리기, html 클롤링'''
 
-        logging.debug('>>> start parsing: '
+        logging.info('>>> start parsing: '
                       + self.category_id + ' Pg.' + str(page_number))
 
-        logging.debug('>>> start scroll down')
+        logging.info('>>> start scroll down')
         self.scroll_page_to_bottom(self.make_url(page_number))
-        logging.debug('>>> start parsing')
+        logging.info('>>> start parsing')
         return self.crawling_html()
 
     def get_page_number(self)->int:
@@ -162,10 +168,12 @@ class ProductCrawl():
     def get_product_detail_info_items(self, item) -> list:
         '''크롤링 된 html에서 상품정보를 갖고 있는 객체 가져오기'''
         product_info_item = item.find_element_by_class_name('basicList_detail_box__3ta3h')
+        self.driver.execute_script("arguments[0].style.overflow = 'visible';", product_info_item)
         self.take_a_sleep(3, 5)
-        product_info_data_items = product_info_item.find_elements_by_tag_name('a')
+        # product_info_data_items = product_info_item.find_elements_by_class_name('basicList_detail__27Krk')
 
-        return product_info_data_items
+        # basicList_detail__27Krk
+        return product_info_item
 
     def insert_data_to_db(self, data:dict):
         '''db data insert'''
@@ -176,16 +184,18 @@ class ProductCrawl():
 
     def parsing_product_detail_info(self, product_info_data_items, product_info_form) -> dict:
         '''text로 수집된 데이터 ':'로 split 하여 dictionary 형태로 저장'''
-        for info_obj in product_info_data_items:
-            info_data:list = info_obj.text.split(":")
+        product_info_datas = product_info_data_items.text.split('|')
+        for data in product_info_datas:
+            # print(info_obj.text)
+            info_data:list = data.split(":")
             if len(info_data)>1:
                 (key, value) = info_data
                 product_info_form['optionInfo'][key] = value
 
-                sampel_data = [product_info_form['catId'], product_info_form['productName'], product_info_form['img'],
-                               product_info_form['n_id'], product_info_form['url'], str(product_info_form['optionInfo'])]
-                tmpData = self.make_csvForm(sampel_data)
-                self.f.write(tmpData)
+        sampel_data = [product_info_form['catId'], product_info_form['productName'], product_info_form['img'],
+                       product_info_form['n_id'], product_info_form['url'], str(product_info_form['optionInfo'])]
+        tmpData = self.make_csvForm(sampel_data)
+        self.f.write(tmpData)
 
         return product_info_form
 
@@ -248,7 +258,7 @@ class ProductCrawl():
     def take_a_sleep(self,s: int, e: int):
         '''S ~ E 사이의 랜던값으로 Sleep'''
         random_count = random.uniform(s, e)
-        logging.debug('take a sleep: '+str(random_count))
+        logging.info('take a sleep: '+str(random_count))
         time.sleep(random_count)  # random
 
     def get_sample_category_data(self):
