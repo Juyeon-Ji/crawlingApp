@@ -50,7 +50,7 @@ class ProductCrawl():
         self.insert_fuc = None
         self.productInfo_arr = []
 
-        self.f = None
+        # self.f = None
         self.action = ActionChains
         self.start_process_get_category_data()
 
@@ -96,7 +96,7 @@ class ProductCrawl():
 
     def start_prasing_process(self):
         '''파싱 프로세스 시작'''
-        self.f = open("parsingData.csv", "w")
+        # self.f = open("parsingData.csv", "w")
         for page_number in self.get_page_number():
 
             crawled_items = self.setting_for_parsing(page_number)
@@ -104,7 +104,7 @@ class ProductCrawl():
             self.take_a_sleep(2,4)
 
             self.parsing_data(crawled_items)
-        self.f.close()
+        # self.f.close()
     def setting_for_parsing(self, page_number)-> [WebElement]:
         '''크롤링하기 위하 사전 작업: 스크롤 내리기, html 클롤링'''
 
@@ -192,26 +192,12 @@ class ProductCrawl():
                 (key, value) = info_data
                 product_info_form['optionInfo'][key] = value
 
-        sampel_data = [product_info_form['catId'], product_info_form['productName'], product_info_form['img'],
-                       product_info_form['n_id'], product_info_form['url'], str(product_info_form['optionInfo'])]
-        tmpData = self.make_csvForm(sampel_data)
-        self.f.write(tmpData)
+        # sampel_data = [product_info_form['catId'], product_info_form['productName'], product_info_form['img'],
+        #                product_info_form['n_id'], product_info_form['url'], str(product_info_form['optionInfo'])]
+        # tmpData = self.make_csvForm(sampel_data)
+        # self.f.write(tmpData)
 
         return product_info_form
-
-    def make_csvForm(self, dataArr: list) -> str:
-        '''csv form 작성'''
-        tmpStr: str = ''
-        i = 0
-        for data in dataArr:
-            if (i + 1 == len(dataArr)):
-                tmpData = str(data) + '\n'
-
-            else:
-                tmpData = str(data) + ','
-            tmpStr += tmpData
-            i += 1
-        return tmpStr
 
     # 상품 정보 담는 객체 Setting 시작
     def setting_product_info_form(self, item) -> dict:
@@ -264,3 +250,16 @@ class ProductCrawl():
     def get_sample_category_data(self):
         return [{'_id': '', 'cid': '50001421', 'name': '에어컨', 'paths': ''}]
 
+    # def make_csvForm(self, dataArr: list) -> str:
+    #     '''csv form 작성'''
+    #     tmpStr: str = ''
+    #     i = 0
+    #     for data in dataArr:
+    #         if (i + 1 == len(dataArr)):
+    #             tmpData = str(data) + '\n'
+    #
+    #         else:
+    #             tmpData = str(data) + ','
+    #         tmpStr += tmpData
+    #         i += 1
+    #     return tmpStr
