@@ -28,8 +28,8 @@
         }
     ],
     "crawl_config": {
-        "exclude-category": ["패션의류", "패션잡화", "화장품/미용","출산/육아","면세점"],
-        "crawl-category-list": ["클렌징"],
+        "exclude-category": ["패션잡화", "화장품/미용","출산/육아","면세점"],
+        "crawl-category-list": ["계절가전", "커튼/블라인드"],
         "crawl-big-category": true,
         "crawl-detail-category": false,
         "crawl-count": 20,

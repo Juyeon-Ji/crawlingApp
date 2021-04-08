@@ -64,6 +64,12 @@ class DatabaseManager(metaclass=Singleton):
         """
         return self._mongo_db.find_all(collection)
 
+    def delete_one(self, collection, query):
+        return self._mongo_db.delete_one(collection, query)
+
+    def update(self, collection, selection, data, is_upsert: bool = True):
+        return self._mongo_db.update(collection, selection, data, is_upsert)
+
     def find(self, collection, query: dict = None):
         return self._mongo_db.find(collection, query)
 

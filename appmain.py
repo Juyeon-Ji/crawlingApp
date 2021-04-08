@@ -64,7 +64,7 @@ def main():
     DatabaseManager()
 
     # 카테고리 파싱 주석
-    # CategoryCrawl().parse()
+    CategoryCrawl().parse()
 
     ProductCrawl()
 
