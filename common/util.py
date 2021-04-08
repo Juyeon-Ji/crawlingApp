@@ -1,3 +1,7 @@
+import random
+import logging
+import time
+
 class Singleton(type):
     _instances = {}
 
@@ -12,6 +16,13 @@ class Singleton(type):
 
 
 class Utils:
+    @classmethod
+    def take_a_sleep(cls, s: int, e: int):
+        """S ~ E 사이의 랜던값으로 Sleep"""
+        random_count = random.uniform(s, e)
+        logging.info('take a sleep: '+str(random_count))
+        time.sleep(random_count)
+
     @classmethod
     def join_path(cls, token, source: str, value: str) -> str:
         return token.join([source, value])
