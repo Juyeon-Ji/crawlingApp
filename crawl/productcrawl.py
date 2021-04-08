@@ -18,13 +18,15 @@ from common.database.dbmanager import DatabaseManager
 from common.driver.seleniumdriver import Selenium
 from selenium.webdriver.common.action_chains import ActionChains
 
-class ProductCrawl():
+
+class ProductCrawl:
     '''
     상품목록에서 상품 정보를 수집하는 crawler 입니다.
     Attributes:
         driver
     '''
-
+    PRODUCT_COLLECTION = "product"
+    CRAWL_CONFIG_COLLECTION = "crawl_config"
 
     def __init__(self):
 
@@ -37,100 +39,92 @@ class ProductCrawl():
         # Database manager - 데이터 조회 및 저장을 여기서 합니다. - singleton
         self.database_manager = DatabaseManager()
 
-        self.paing_start:int = 1 # self.crawl_config.crawl_page_range
-        self.paging_range:int = 1
-        self.paging_size:int = 20  # self.crawl_config.crawl_count
+        # start Page Default
+        self._paging_start: int = 1
+        self._paging_range: int = self.crawl_config.crawl_page_range
+        self._view_size: int = self.crawl_config.crawl_count
 
+        self.base_url = "https://search.shopping.naver.com/search/category?catId={0} \
+                 &frm=NVSHMDL&origQuery&pagingIndex={1}&pagingSize={2}&productSet=model \
+                 &query&sort=rel&timestamp=&viewType=list"
 
-        self.base_url = ['https://search.shopping.naver.com/search/category?catId=',
-                        '&frm=NVSHMDL&origQuery&pagingIndex=',
-                        '&pagingSize=', '&productSet=model&query&sort=rel&timestamp=&viewType=list']
+        # self.base_url = ['https://search.shopping.naver.com/search/category?catId=',
+        #                 '&frm=NVSHMDL&origQuery&pagingIndex=',
+        #                 '&pagingSize=', '&productSet=model&query&sort=rel&timestamp=&viewType=list']
 
-        self.data = None
-        self.insert_fuc = None
+        # 먼저 확인해야함. 다시 수집시 DB->Config 정보 셋
+        self._check_crawl_configuration()
+
+        self._result: list = []
+        self._cid: str = None
+
         self.productInfo_arr = []
-
-        # self.f = None
-        self.action = ActionChains
-        self.start_process_get_category_data()
-
         self.last_crawled_date_time = datetime.datetime.now()
 
-    # 카테고리 데이터 가져오기 시작
-    def start_process_get_category_data(self):
-        '''수집된 카테고리 데이터 가져오기'''
-        # DB에서 데이터 가져오기 임시 주석
-        # try:
-        #     # generator로 부터 카테고리 데이터 가져오기
-        #     self.categoryData = self._category_generator()
-        #     self.get_category_info_form_data()
+    def _check_crawl_configuration(self):
+        """Config 정보 set"""
+        _config = self.database_manager.find_one(self.CRAWL_CONFIG_COLLECTION)
+        self._paging_start = _config['start_page']
+        self.crawl_config.crawl_category = _config['crawl_category_list']
 
-        # except Exception as e:
-        # 샘플 카테고리 데이터에서 가져오기 (Test 용)
-        # logging.exception(e)
+    def _upsert_crawl_configuration(self, start_page):
+        """모든 분석이 끝나고 Config 정보 update"""
+        # 조건
+        _filter = {}
+        # 변경 데이터
+        _config = dict()
+        _config['start_page'] = start_page
 
-        # 샘플 데이터 가져오기 주석 필요
-        self.categoryData = self.get_sample_category_data()
-        self.get_category_id_from_data(self.categoryData)
+        self.database_manager.update(self.CRAWL_CONFIG_COLLECTION, _filter, _config)
 
-    def _category_generator(self):
-        """:return category 목록들"""
+    def _category_getter(self) -> list:
+        """ 카테고리 목록 조회해서 분석
+        :return category 목록들"""
+        _categories: list = []
         for item in self.crawl_config.crawl_category:
             query = self.database_manager.keyword_query('paths', item)
-            yield self.database_manager.find('category', query=query)
+            _categories.extend(list(self.database_manager.find('category', query=query)))
 
-    def get_category_info_form_data(self):
-        '''db에서 가져온 데이터 객체에서 json형태 category 데이터 가져오기'''
-        for categories_info_obj in self.categoryData:
-            self.get_category_id_from_data(categories_info_obj)
+        return _categories
 
-    def get_category_id_from_data(self, categories_info_obj):
-        '''dictionary data format 조회'''
-        for category_info in categories_info_obj:
-            self.category_id = category_info['cid']
+    def parse(self):
+        _categories: list = self._category_getter()
+        try:
+            for category in _categories:
+                self._cid = category['cid']
 
-            self.start_prasing_process()
+                self.start_parsing_process()
 
-    # 카테고리 데이터 가져오기 끝
+        except Exception as e:
+            logging.debug(e)
 
-
-    def start_prasing_process(self):
+    def start_parsing_process(self):
         '''파싱 프로세스 시작'''
-        # self.f = open("parsingData.csv", "w")
         for page_number in self.get_page_number():
+            _url = self.make_url(page_number)
+            self.driver.get(url=_url)
 
-            crawled_items = self.setting_for_parsing(page_number)
+            logging.info('>>> start parsing: '
+                         + self._cid + ' Pg.' + str(page_number))
 
-            self.take_a_sleep(2,4)
+            self.scroll_page_to_bottom()
 
-            self.parsing_data(crawled_items)
-        # self.f.close()
-    def setting_for_parsing(self, page_number)-> [WebElement]:
-        '''크롤링하기 위하 사전 작업: 스크롤 내리기, html 클롤링'''
+            self.take_a_sleep(2, 4)
 
-        logging.info('>>> start parsing: '
-                      + self.category_id + ' Pg.' + str(page_number))
+            self.parsing_data(self.crawling_html())
 
-        logging.info('>>> start scroll down')
-        self.scroll_page_to_bottom(self.make_url(page_number))
-        logging.info('>>> start parsing')
-        return self.crawling_html()
-
-    def get_page_number(self)->int:
+    def get_page_number(self) -> int:
         '''파싱 시작페이지 ~ 파싱 페이지 끝까지 페이지 넘버 넘겨주기'''
-        for page_number in range(self.paing_start, self.paing_start+ self.paging_range):
+        # 변수 검증만 해보면됨.
+        for page_number in range(self._paging_start, self._paging_start + self._paging_range):
             yield page_number
-
 
     def make_url(self, paging_index) -> str:
         '''category id, 페이지 사이즈, 페이지 넘버를 조합하여 url 생성'''
-        return self.base_url[0] + self.category_id + self.base_url[1] + str(paging_index) + \
-               self.base_url[2] + str(self.paging_size) + self.base_url[3]
+        return self.base_url.format(self._cid, paging_index, self._view_size)
 
-    def scroll_page_to_bottom(self, product_page_url):
+    def scroll_page_to_bottom(self):
         '''스크롤 끝가지 내리기'''
-        self.driver.get(url=product_page_url)
-
         last_height = self.driver.execute_script("return document.body.scrollHeight")
         while True:
             for _ in range(15):
@@ -142,24 +136,21 @@ class ProductCrawl():
                 break
             last_height = new_height
 
-
     def crawling_html(self) -> [WebElement]:
         '''데이터 파싱'''
-        crawled_items:[WebElement] = self.driver.find_elements_by_xpath\
+        crawled_items: [WebElement] = self.driver.find_elements_by_xpath\
                 ('//*[@id="__next"]/div/div[2]/div/div[3]/div[1]/ul/div/div')
 
         return crawled_items
 
-
-
     def parsing_data(self, items: [WebElement]):
         for item in items:
-            self.take_a_sleep(1,3)
+            self.take_a_sleep(1, 3)
 
             product_info_form: dict = self.setting_product_info_form(item)
 
-            product_info_data_items:list = self.get_product_detail_info_items(item)
-            product_info_form:dict = self.parsing_product_detail_info(product_info_data_items, product_info_form)
+            product_info_data_items: list = self.get_product_detail_info_items(item)
+            product_info_form: dict = self.parsing_product_detail_info(product_info_data_items, product_info_form)
 
             logging.debug(product_info_form)
             print(product_info_form)
