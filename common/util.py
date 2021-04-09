@@ -20,7 +20,7 @@ class Utils:
     def take_a_sleep(cls, s: int, e: int):
         """S ~ E 사이의 랜던값으로 Sleep"""
         random_count = random.uniform(s, e)
-        logging.info('take a sleep: '+str(random_count))
+        # logging.info('take a sleep: '+str(random_count))
         time.sleep(random_count)
 
     @classmethod

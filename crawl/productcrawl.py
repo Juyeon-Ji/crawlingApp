@@ -46,7 +46,7 @@ class ProductCrawl:
         self._paging_range: int = self.crawl_config.crawl_page_range
         self._view_size: int = self.crawl_config.crawl_count
 
-        self.base_url = ("https://search.shopping.naver.com/search/category?catId={0}&frm=NVSHMDL&origQuery&pagingIndex={1}&pagingSize={2}&productSet=model&query&sort=rel&timestamp=&viewType=list")
+        # self.base_url =
 
         # 먼저 확인해야함. 다시 수집시 DB->Config 정보 셋
         # TODO: 나중에 처리하도록 수정
@@ -64,7 +64,8 @@ class ProductCrawl:
         """db data insert"""
         try:
             # TODO: 값 비교는 어디서 하지?
-            self.database_manager.insert_one_mongo(self.PRODUCT_COLLECTION, value)
+            _selection = self.database_manager.find_query("n_id", value.get("n_id"))
+            self.database_manager.update(self.PRODUCT_COLLECTION, _selection, value)
         except Exception as e:
             logging.error('!!! Fail: Insert data to DB: ', e)
 
@@ -108,26 +109,27 @@ class ProductCrawl:
 
     def start_parsing_process(self):
         """파싱 프로세스 시작"""
-        idx = 0
-        for page_number in range(1+self.calc_page(self.get_products_count())):
+        self._current_page = 0
+        for page_number in range(1, self.calc_page(self.get_products_count())):
             _url = self.make_url(page_number)
+            logging.info(">>> URL : " + _url)
             self.driver.get(url=_url)
-
             logging.info('>>> start parsing: ' + self._category.get('name') + ' Pg.' + str(page_number))
 
             self.scroll_page_to_bottom()
+            logging.info(">>> page scroll end")
 
-            Utils.take_a_sleep(2, 4)
+            # Utils.take_a_sleep(1, 2)
 
             self.parsing_data(self.crawling_html())
-            # 이게 맞는지 확인 필요.
-            self.driver.close()
 
             self._current_page = page_number
 
+        logging.info('>>> end childCategory: ' + self._category.get('name') + ' Pg.' + str(self._current_page))
+
     def parsing_data(self, products: [WebElement]):
         for product in products:
-            Utils.take_a_sleep(1, 3)
+            Utils.take_a_sleep(1, 2)
             # 결과 저장 dict 생성
             if self._is_ad(product):
                 continue
@@ -153,14 +155,16 @@ class ProductCrawl:
         :arg
         :return:
         """
-        self.driver.get(url=self.make_url(1))
+        _url = self.make_url(1)
+        self.driver.get(url=_url)
         element = self.driver.find_element(By.CLASS_NAME, "subFilter_seller_filter__3yvWP")
-        campare_price_tab_item = element.find_element(By.CLASS_NAME, "active")
-        compare_price_product_count = campare_price_tab_item.find_element_by_class_name('subFilter_num__2x0jq')
+        compare_price_tab_item = element.find_element(By.CLASS_NAME, "active")
+        _count: str = compare_price_tab_item.find_element_by_class_name('subFilter_num__2x0jq').text
+        _count = _count.replace(",", "")
 
-        return int(compare_price_product_count.text)
+        return int(_count)
 
-    def calc_page(self, products_count:int)-> int:
+    def calc_page(self, products_count: int) -> int:
         """
         페이지를 계산해주는 함수
         :arg
@@ -179,16 +183,17 @@ class ProductCrawl:
         class_text: str = item.find_element_by_class_name('basicList_item__2XT81').get_attribute('class')
         return class_text.endswith('ad')
 
-    def get_page_number(self) -> int:
-        """파싱 시작페이지 ~ 파싱 페이지 끝까지 페이지 넘버 넘겨주기"""
-        # 변수 검증만 해보면됨.
-        for page_number in range(self._paging_start, self._paging_start + self._paging_range):
-            yield page_number
+    # def get_page_number(self) -> int:
+    #     """파싱 시작페이지 ~ 파싱 페이지 끝까지 페이지 넘버 넘겨주기"""
+    #     # 변수 검증만 해보면됨.
+    #     for page_number in range(self._paging_start, self._paging_start + self._paging_range):
+    #         yield page_number
 
     def make_url(self, paging_index) -> str:
         """category id, 페이지 사이즈, 페이지 넘버를 조합하여 url 생성"""
+        _url = ("https://search.shopping.naver.com/search/category?catId={0}&frm=NVSHMDL&origQuery&pagingIndex={1}&pagingSize={2}&productSet=model&query&sort=rel&timestamp=&viewType=list")
         _cid = self._category['cid']
-        return self.base_url.format(_cid, paging_index, self._view_size)
+        return _url.format(_cid, paging_index, self._view_size)
 
     def scroll_page_to_bottom(self):
         """스크롤 끝가지 내리기"""
@@ -217,7 +222,7 @@ class ProductCrawl:
 
         product_info_item = item.find_element_by_class_name('basicList_detail_box__3ta3h')
         self.driver.execute_script("arguments[0].style.overflow = 'visible';", product_info_item)
-        Utils.take_a_sleep(3, 5)
+        Utils.take_a_sleep(1, 3)
         # List -> WebElement 로 변경함.
         # product_info_data_items = product_info_item.find_elements_by_class_name('basicList_detail__27Krk')
         # basicList_detail__27Krk
