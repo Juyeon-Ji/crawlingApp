@@ -19,10 +19,10 @@ class Selenium(object, metaclass=Singleton):
             (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36"
 
         chrome_options = Options()
-        chrome_options.add_argument("--headless")
+        # chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("user-agent=" + _user_agent)
-        # chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--disable-gpu")
 
         _CHROMEDRIVER_PATH = 'resource/chromedriver.exe'
         self.driver = webdriver.Chrome(executable_path=_CHROMEDRIVER_PATH, chrome_options=chrome_options)

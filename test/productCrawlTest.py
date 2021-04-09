@@ -7,257 +7,194 @@ from selenium.webdriver.common.keys import Keys
 
 import time
 
-class MyTestCase(unittest.TestCase):
-    driver = None
+    def test_get_category_id_from_data(self):
+        '''dictionary data format 조회'''
 
-    # 여기서 기본 베이스 되는 아이템들 선언 및 로드해서 처리합시다.
-    def test_setUp(self) -> None:
-        self.paging_count = 1;
-        self.baseUrl = ['https://search.shopping.naver.com/search/category?catId=',
-                        '&frm=NVSHMDL&origQuery&pagingIndex=',
-                        '&pagingSize=100&productSet=model&query&sort=rel&timestamp=&viewType=list']
+        for category_info in categories_info_obj:
+            self.category_id = category_info['cid']
 
-        self.data = [{
-                "name": "패션의류",
-                "parent_id": "9b56f6852baa42d8bcaee8b0caddf3fb",
-                "child": [
-                    {
-                        "name": "여성의류전체보기",
-                        "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000167",
-                        "cat_id": "50000167",
-                        "_id": "dd94754e0d63406782ca5b687c36e6d0",
-                        "parentId": "9b56f6852baa42d8bcaee8b0caddf3fb",
-                        "childs": [
-                            {
-                                "name": "니트/스웨터",
-                                "_id": "0f54fe7d-aa68-486f-872e-370b0f193732",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000805",
-                                "cat_id": "50000805",
-                                "parentId": "dd94754e0d63406782ca5b687c36e6d0"
-                            },
-                            {
-                                "name": "정장세트",
-                                "_id": "58c4cfe1-4afb-4160-85be-f66846778a57",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000816",
-                                "cat_id": "50000816",
-                                "parentId": "dd94754e0d63406782ca5b687c36e6d0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "남성의류전체보기",
-                        "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000169",
-                        "cat_id": "50000169",
-                        "_id": "3fcd4b506ad542cbaf6131caa6e9e6f9",
-                        "parentId": "9b56f6852baa42d8bcaee8b0caddf3fb",
-                        "childs": [
-                            {
-                                "name": "니트/스웨터",
-                                "_id": "11a4c534-d0fd-485a-9c49-a6e605b0e447",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000831",
-                                "cat_id": "50000831",
-                                "parentId": "3fcd4b506ad542cbaf6131caa6e9e6f9"
-                            },
-                            {
-                                "name": "트레이닝복",
-                                "_id": "bf27b7b8-a0bc-400e-ab7f-3ff7a8c46790",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000841",
-                                "cat_id": "50000841",
-                                "parentId": "3fcd4b506ad542cbaf6131caa6e9e6f9"
-                            },
-                            {
-                                "name": "점프슈트",
-                                "_id": "f091e660-38e2-485f-a773-1a1b0120662b",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50008960",
-                                "cat_id": "50008960",
-                                "parentId": "3fcd4b506ad542cbaf6131caa6e9e6f9"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "여성 언더웨어/잠옷전체보기",
-                        "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000168",
-                        "cat_id": "50000168",
-                        "_id": "e2938b4efabc4c61af4e892a8f38074d",
-                        "parentId": "9b56f6852baa42d8bcaee8b0caddf3fb",
-                        "childs": [
-                            {
-                                "name": "브라",
-                                "_id": "36d399ba-9b1e-49ec-ba58-82ac5d906a02",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000823",
-                                "cat_id": "50000823",
-                                "parentId": "e2938b4efabc4c61af4e892a8f38074d"
-                            },
-                            {
-                                "name": "언더웨어소품",
-                                "_id": "e56f681e-02f9-4305-896d-ad385b8d5afe",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50001454",
-                                "cat_id": "50001454",
-                                "parentId": "e2938b4efabc4c61af4e892a8f38074d"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "남성 언더웨어/잠옷전체보기",
-                        "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000170",
-                        "cat_id": "50000170",
-                        "_id": "14c073c496ef4a51a2d0ee72cb56c44d",
-                        "parentId": "9b56f6852baa42d8bcaee8b0caddf3fb",
-                        "childs": [
-                            {
-                                "name": "팬티",
-                                "_id": "f7b92f78-ee7b-4fab-9052-f15b322093a3",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000845",
-                                "cat_id": "50000845",
-                                "parentId": "14c073c496ef4a51a2d0ee72cb56c44d"
-                            },
-                            {
-                                "name": "러닝",
-                                "_id": "b54eba54-5fdc-404f-aea5-36cee15fffa4",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000846",
-                                "cat_id": "50000846",
-                                "parentId": "14c073c496ef4a51a2d0ee72cb56c44d"
-                            },
-                            {
-                                "name": "시즌성내의",
-                                "_id": "a1891ddb-9298-45ea-a1e7-a9b796925256",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50001456",
-                                "cat_id": "50001456",
-                                "parentId": "14c073c496ef4a51a2d0ee72cb56c44d"
-                            }
-                        ]
-                    }
-                ]
-            },
-                {
-                "name": "디지털/가전",
-                "parent_id": "881c48ac698446d48054466636962e30",
-                "child": [
-                    {
-                        "name": "휴대폰전체보기",
-                        "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000204",
-                        "cat_id": "50000204",
-                        "_id": "f2c992c62e0a44b2be36652f234fb0e1",
-                        "parentId": "881c48ac698446d48054466636962e30",
-                        "childs": [
-                            {
-                                "name": "휴대폰 케이스",
-                                "_id": "b3fa21cf-1621-4b35-bfb5-29e16ed1e78b",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50001377",
-                                "cat_id": "50001377",
-                                "parentId": "f2c992c62e0a44b2be36652f234fb0e1"
-                            },
-                            {
-                                "name": "온수매트",
-                                "_id": "ebf44e59-794b-4e2f-9abf-be6369fdf1d2",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50009120",
-                                "cat_id": "50009120",
-                                "parentId": "f2c992c62e0a44b2be36652f234fb0e1"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "노트북전체보기",
-                        "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000151",
-                        "cat_id": "50000151",
-                        "_id": "a349ca82ebf8433abb402df243d928a0",
-                        "parentId": "881c48ac698446d48054466636962e30",
-                        "childs": [
-                            {
-                                "name": "DSLR 카메라",
-                                "_id": "1dc3ef67-798c-4dea-9844-5e77e967994a",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000265",
-                                "cat_id": "50000265",
-                                "parentId": "a349ca82ebf8433abb402df243d928a0"
-                            },
-                            {
-                                "name": "커피메이커",
-                                "_id": "26b5223e-c718-48d0-89df-e3128abc7d4c",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50001708",
-                                "cat_id": "50001708",
-                                "parentId": "a349ca82ebf8433abb402df243d928a0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "태블릿PC전체보기",
-                        "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000152",
-                        "cat_id": "50000152",
-                        "_id": "59977f04e84341d0870e649ff495780b",
-                        "parentId": "881c48ac698446d48054466636962e30",
-                        "childs": [
-                            {
-                                "name": "TV",
-                                "_id": "38d7f013-50f0-45c0-afa3-1df522a1b832",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50001395",
-                                "cat_id": "50001395",
-                                "parentId": "59977f04e84341d0870e649ff495780b"
-                            },
-                            {
-                                "name": "피부케어기기",
-                                "_id": "1f4d9e53-13a4-4682-a310-ace2930346c0",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50001995",
-                                "cat_id": "50001995",
-                                "parentId": "59977f04e84341d0870e649ff495780b"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "PC전체보기",
-                        "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000089",
-                        "cat_id": "50000089",
-                        "_id": "3d7c656d19044e1e83dba14009c7aebc",
-                        "parentId": "881c48ac698446d48054466636962e30",
-                        "childs": [
-                            {
-                                "name": "마우스",
-                                "_id": "24a570c1-78eb-4487-976b-6af5a34b7075",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50001203",
-                                "cat_id": "50001203",
-                                "parentId": "3d7c656d19044e1e83dba14009c7aebc"
-                            },
-                            {
-                                "name": "PC 게임",
-                                "_id": "e840d7fd-69a2-4fb2-b333-6986a20991b3",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50001735",
-                                "cat_id": "50001735",
-                                "parentId": "3d7c656d19044e1e83dba14009c7aebc"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "모니터전체보기",
-                        "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000153",
-                        "cat_id": "50000153",
-                        "_id": "57cc6c303fd04aa19796100097418df7",
-                        "parentId": "881c48ac698446d48054466636962e30",
-                        "childs": [
-                            {
-                                "name": "CPU",
-                                "_id": "a1616fd4-c87a-435c-9e05-81b3504ecabf",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50001620",
-                                "cat_id": "50001620",
-                                "parentId": "57cc6c303fd04aa19796100097418df7"
-                            },
-                            {
-                                "name": "RAM",
-                                "_id": "d076fbbd-c33e-42b7-8e43-1501098f3700",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50001218",
-                                "cat_id": "50001218",
-                                "parentId": "57cc6c303fd04aa19796100097418df7"
-                            },
-                            {
-                                "name": "전방/후방 카메라",
-                                "_id": "1345ac9b-1abf-4514-9472-8885dedd3cfe",
-                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50001191",
-                                "cat_id": "50001191",
-                                "parentId": "57cc6c303fd04aa19796100097418df7"
-                            }
-                        ]
-                    }
-                ]
-            }]
+            self.start_prasing_process()
 
+    # 카테고리 데이터 가져오기 끝
+
+    def start_prasing_process(self):
+        '''파싱 프로세스 시작'''
+        # self.f = open("parsingData.csv", "w")
+        for page_number in self.get_page_number():
+            crawled_items = self.setting_for_parsing(page_number)
+
+            self.take_a_sleep(2, 4)
+
+            self.parsing_data(crawled_items)
+        # self.f.close()
+
+    def setting_for_parsing(self, page_number) -> [WebElement]:
+        '''크롤링하기 위하 사전 작업: 스크롤 내리기, html 클롤링'''
+
+        logging.info('>>> start parsing: '
+                     + self.category_id + ' Pg.' + str(page_number))
+
+        logging.info('>>> start scroll down')
+        self.scroll_page_to_bottom(self.make_url(page_number))
+        logging.info('>>> start parsing')
+        return self.crawling_html()
+
+    def get_page_number(self) -> int:
+        '''파싱 시작페이지 ~ 파싱 페이지 끝까지 페이지 넘버 넘겨주기'''
+        for page_number in range(self.paing_start, self.paing_start + self.paging_range):
+            yield page_number
+
+    def make_url(self, paging_index) -> str:
+        '''category id, 페이지 사이즈, 페이지 넘버를 조합하여 url 생성'''
+        return self.base_url[0] + self.category_id + self.base_url[1] + str(paging_index) + \
+               self.base_url[2] + str(self.paging_size) + self.base_url[3]
+
+    def scroll_page_to_bottom(self, product_page_url):
+        '''스크롤 끝가지 내리기'''
+        self.driver.get(url=product_page_url)
+
+        last_height = self.driver.execute_script("return document.body.scrollHeight")
+        while True:
+            for _ in range(15):
+                self.driver.find_element_by_class_name \
+                    ('thumbnail_thumb__3Agq6').send_keys(Keys.SPACE)
+                self.take_a_sleep(2, 8)
+            new_height = self.driver.execute_script("return document.body.scrollHeight")
+            if new_height == last_height:
+                break
+            last_height = new_height
+
+    def crawling_html(self) -> [WebElement]:
+        '''데이터 파싱'''
+        crawled_items: [WebElement] = self.driver.find_elements_by_xpath \
+            ('//*[@id="__next"]/div/div[2]/div/div[3]/div[1]/ul/div/div')
+
+        return crawled_items
+
+    def parsing_data(self, items: [WebElement]):
+        for item in items:
+            self.take_a_sleep(1, 3)
+
+            product_info_form: dict = self.setting_product_info_form(item)
+
+            product_info_data_items: list = self.get_product_detail_info_items(item)
+            product_info_form: dict = self.parsing_product_detail_info(product_info_data_items, product_info_form)
+
+            logging.debug(product_info_form)
+            self.insert_data_to_db(product_info_form)  # db insert
+
+    def get_product_detail_info_items(self, item) -> list:
+        '''크롤링 된 html에서 상품정보를 갖고 있는 객체 가져오기'''
+        product_info_item = item.find_element_by_class_name('basicList_detail_box__3ta3h')
+        self.driver.execute_script("arguments[0].style.overflow = 'visible';", product_info_item)
+        self.take_a_sleep(3, 5)
+        # product_info_data_items = product_info_item.find_elements_by_class_name('basicList_detail__27Krk')
+
+        # basicList_detail__27Krk
+        return product_info_item
+
+    def insert_data_to_db(self, data: dict):
+        '''db data insert'''
+        try:
+            if self.database_manager.count_document_exists('product', 'nid', data):  # 해당 상품이 DB에 존재 하는 경우
+                logging.info('data exist', data)
+            else:
+                self.database_manager.find('product', 'nid', data)
+
+        except Exception as e:
+            logging.error('!!! Fail: Insert data to DB: ', e)
+
+    def _update(self, cid, name, paths: str):
+        _query = self.database_manager.find_query('cid', cid)
+
+        _update_data = dict()
+        _update_data['name'] = name
+        _update_data['paths'] = paths
+        _update_data['update_time'] = datetime.now()
+
+        return self.database_manager.update(self.COLLECTION, _query, {"&set": _update_data})
+
+    def parsing_product_detail_info(self, product_info_data_items, product_info_form) -> dict:
+        '''text로 수집된 데이터 ':'로 split 하여 dictionary 형태로 저장'''
+        product_info_datas = product_info_data_items.text.split('|')
+        for data in product_info_datas:
+            # print(info_obj.text)
+            info_data: list = data.split(":")
+            if len(info_data) > 1:
+                (key, value) = info_data
+                product_info_form['optionInfo'][key] = value
+
+        # sampel_data = [product_info_form['catId'], product_info_form['productName'], product_info_form['img'],
+        #                product_info_form['n_id'], product_info_form['url'], str(product_info_form['optionInfo'])]
+        # tmpData = self.make_csvForm(sampel_data)
+        # self.f.write(tmpData)
+
+        return product_info_form
+
+    # 상품 정보 담는 객체 Setting 시작
+    def setting_product_info_form(self, item) -> dict:
+        '''파싱된 데이터 json 포멧에 맞게 넣도록 Setting
+            img link, 상품 상세정보 link, 상품 naver id'''
+
+        product_info_form = self.init_product_info_form()
+
+        titleObj = item.find_element_by_class_name('basicList_link__1MaTN')
+        thumbnailObj = item.find_element_by_class_name('thumbnail_thumb__3Agq6')
+
+        return self.set_product_info_form(product_info_form, titleObj, thumbnailObj)
+
+    def init_product_info_form(self) -> dict:
+        '''상품 정보를 담는 객체 formmat'''
+        return {'productName': 'null', 'url': 'null',
+                'catId': 'null', 'n_id': 'null',
+                'optionInfo': {}, 'img': 'null', }
+
+    def set_product_info_form(self, product_info_form, titleObj, thumbnailObj) -> dict:
+        '''파싱된 데이터 json 포멧에 맞게 넣기
+            img link, 상품 상세정보 link, 상품 naver id'''
+        product_info_form['catId'] = self.category_id
+        product_info_form['productName'] = titleObj.text
+
+        if thumbnailObj:
+            try:
+                element = thumbnailObj.find_element_by_tag_name('img')
+            except:
+                element = None
+            if element:
+                product_info_form['img'] = element.get_attribute('src')
+            else:
+                pass
+
+        if titleObj.get_attribute('href'):
+            product_info_form['url'] = thumbnailObj.get_attribute('href')
+            product_info_form['n_id'] = thumbnailObj.get_attribute('data-nclick').split(':')[-1]
+
+        return product_info_form
+
+    # 상품 정보 담는 객체 Setting 끝
+
+    def take_a_sleep(self, s: int, e: int):
+        '''S ~ E 사이의 랜던값으로 Sleep'''
+        random_count = random.uniform(s, e)
+        logging.info('take a sleep: ' + str(random_count))
+        time.sleep(random_count)  # random
+
+    def get_sample_category_data(self):
+        return [{'_id': '', 'cid': '50001421', 'name': '에어컨', 'paths': ''}]
+
+    # def make_csvForm(self, dataArr: list) -> str:
+    #     '''csv form 작성'''
+    #     tmpStr: str = ''
+    #     i = 0
+    #     for data in dataArr:
+    #         if (i + 1 == len(dataArr)):
+    #             tmpData = str(data) + '\n'
+    #
+    #         else:
+    #             tmpData = str(data) + ','
+    #         tmpStr += tmpData
+    #         i += 1
+    #     return tmpStr
 
 
 

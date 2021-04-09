@@ -4,6 +4,7 @@ import time
 from selenium import webdriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
 
 # from proj.common.driver.seleniumdriver import Selenium
 # 통합 실행 용
@@ -21,16 +22,23 @@ class ProductCrawl():
     cat_id: str
     catId: str
 
-    def __init__(self):
-        CHROMEDRIVER_PATH = r'C:\Users\지주연\PycharmProjects\crawlingApp\proj\resource\chromedriver.exe'
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-gpu")
-
-        self.driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, chrome_options=chrome_options)
-        self.f = open("parsingData.csv", "w")
-
+    def __init__(self, start_by_own: bool):
+        if start_by_own:
+            CHROMEDRIVER_PATH = r'C:\Users\지주연\PycharmProjects\crawlingApp\proj\resource\chromedriver.exe'
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-gpu")
+            self.driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, chrome_options=chrome_options)
+            self.f = open("parsingData.csv", "w")
+        else:
+            pass
+            # # 크롬 selenium Driver - singleton
+            # self.driver = Selenium().driver
+            # # 크롤링 설정 정보 관리 - singleton
+            # self.crawl_config: CrawlConfiguration = ConfigManager().crawl_config_object
+            # # Database manager - 데이터 조회 및 저장을 여기서 합니다. - singleton
+            # self.database_manager = DatabaseManager()
 
         self.paging_count = 2 # self.crawl_config.crawl_page_range
         self.pagingSize = 20 # self.crawl_config.crawl_count
@@ -40,12 +48,18 @@ class ProductCrawl():
                         '&frm=NVSHMDL&origQuery&pagingIndex=',
                         '&pagingSize=', '&productSet=model&query&sort=rel&timestamp=&viewType=list']
 
+        # self.baseUrl = ['https://search.shopping.naver.com/search/category?catId=',
+        #                 '&frm=NVSHMDL&origQuery&pagingIndex=',
+        #                 '&pagingSize={0}&productSet=model&query&sort=rel&timestamp=&viewType=list'.format(
+        #                     self.crawl_config.crawl_count)
+        #                 ]
 
         self.data = None
 
         self.insert_fuc = None
 
-        self.data = self.get_sample_category_data()
+        if(self.data is None):
+            self.data = self.getData()
 
         try:
             self.get_bigCategory_data()
@@ -53,19 +67,36 @@ class ProductCrawl():
             print('Exception: ', e)
             # logging.exception(e)
 
-        logging.info("driver close ")
-        self.driver.close()
-        logging.info("driver quit")
-        self.driver.quit()
-        logging.info("driver quit end")
-        self.f.close()
+        if (start_by_own):
+            logging.info("driver close ")
+            self.driver.close()
+            logging.info("driver quit")
+            self.driver.quit()
+            logging.info("driver quit end")
+            self.f.close()
 
 
     def get_bigCategory_data(self) -> None:
         '''큰 카테고리의 id로 조회'''
         # logging.info('큰 카테고리 수집 시작')
+
+
+        # tab_item = tab_view.find_element_by_tag_name('li')
+        # compare_price_tiem_count_item = tab_item.find_element_by_class_name('subFilter_num__2x0jq')
+        # print(compare_price_tiem_count_item.text)
+        # tab_view.text
         for category in self.data:
             for bigCategory in category['child']:
+
+                self.catId = bigCategory['cat_id']
+
+                self.driver.get(url=self.makeUrl(1))
+                element = self.driver.find_element(By.CLASS_NAME, "subFilter_seller_filter__3yvWP")
+                campare_price_tab_item = element.find_element(By.CLASS_NAME, "active")
+                compare_price_product_count = campare_price_tab_item.find_element_by_class_name('subFilter_num__2x0jq')
+
+                print(int(compare_price_product_count.text))
+
                 for i in range(self.paging_count):
                     print('>>> parsing page: ', bigCategory['name'], str(i))
                     self.startPrasingProcess(bigCategory['cat_id'], i)
@@ -74,10 +105,14 @@ class ProductCrawl():
     def get_detailCategory_data(self):
         '''큰 카테고리의 하위 카테고리의 id로 조회'''
         # logging.info('큰 카테고리의 하위 카테고리 수집 시작')
+
+
         for category in self.data:
-            for i in range(self.paging_count):
-                # logging.debug('>>> parsing page: ', detailCategory['name'], str(i))
-                self.startPrasingProcess(category['cid'], i)
+            for bigCategory in category['child']:
+                for detailCategory in bigCategory['child']:
+                    for i in range(self.paging_count):
+                        # logging.debug('>>> parsing page: ', detailCategory['name'], str(i))
+                        self.startPrasingProcess(detailCategory['cat_id'], i)
 
     def startPrasingProcess(self, catId, paginIndex):
         self.catId = catId
@@ -114,6 +149,7 @@ class ProductCrawl():
 
     def parsingData(self) -> list:
         '''데이터 파싱'''
+
         items = self.driver.find_elements_by_xpath('//*[@id="__next"]/div/div[2]/div/div[3]/div[1]/ul/div/div')
 
         item: WebElement
@@ -134,10 +170,6 @@ class ProductCrawl():
             titleObj = item.find_element_by_class_name('basicList_link__1MaTN')
             thumbnailObj = item.find_element_by_class_name('thumbnail_thumb__3Agq6')
 
-            item.find_element_by_class_name('ad_ad_stk__12U34').text
-
-            # find_elements_by_css_selector
-            self.driver.find_element_by_class_name('#basicList_price_area__1UXXR')
             productInfoObj['catId'] = self.catId
             productInfoObj['productName'] = titleObj.text
 
@@ -198,11 +230,68 @@ class ProductCrawl():
             i += 1
         return tmpStr
 
-
-def get_sample_category_data(self):
-    return [{'_id': '', 'cid': '50000158', 'name': '문구/사무용품', 'paths': ''}]
-
+    def getData(self):
+            return [{
+                "name": "패션의류",
+                "parent_id": "9b56f6852baa42d8bcaee8b0caddf3fb",
+                "child": [
+                    {
+                        "name": "여성의류전체보기",
+                        "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000167",
+                        "cat_id": "50000167",
+                        "_id": "dd94754e0d63406782ca5b687c36e6d0",
+                        "parentId": "9b56f6852baa42d8bcaee8b0caddf3fb",
+                        "childs": [
+                            {
+                                "name": "니트/스웨터",
+                                "_id": "0f54fe7d-aa68-486f-872e-370b0f193732",
+                                "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000805",
+                                "cat_id": "50000805",
+                                "parentId": "dd94754e0d63406782ca5b687c36e6d0"
+                            }
+                        ]
+                    }
+                ]
+            },
+                {
+                    "name": "디지털/가전",
+                    "parent_id": "881c48ac698446d48054466636962e30",
+                    "child": [
+                        {
+                            "name": "노트북전체보기",
+                            "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000151",
+                            "cat_id": "50000151",
+                            "_id": "a349ca82ebf8433abb402df243d928a0",
+                            "parentId": "881c48ac698446d48054466636962e30",
+                            "childs": [
+                                {
+                                    "name": "DSLR 카메라",
+                                    "_id": "1dc3ef67-798c-4dea-9844-5e77e967994a",
+                                    "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000265",
+                                    "cat_id": "50000265",
+                                    "parentId": "a349ca82ebf8433abb402df243d928a0"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "태블릿PC전체보기",
+                            "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50000152",
+                            "cat_id": "50000152",
+                            "_id": "59977f04e84341d0870e649ff495780b",
+                            "parentId": "881c48ac698446d48054466636962e30",
+                            "childs": [
+                                {
+                                    "name": "TV",
+                                    "_id": "38d7f013-50f0-45c0-afa3-1df522a1b832",
+                                    "href": "https://search.shopping.naver.com/category/category.nhn?cat_id=50001395",
+                                    "cat_id": "50001395",
+                                    "parentId": "59977f04e84341d0870e649ff495780b"
+                                }
+                            ]
+                        }
+                    ]
+                }]
 
 if __name__ == '__main__':
 
-    pro = ProductCrawl()
+    pro = ProductCrawl(True)
