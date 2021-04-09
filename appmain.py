@@ -25,7 +25,7 @@ def main():
     # 카테고리 파싱 주석
     CategoryCrawl().parse()
 
-    ProductCrawl()
+    # ProductCrawl()
 
     logger.info('Crawl Test End')
 

@@ -32,7 +32,7 @@
         "crawl-category-list": ["문구/사무용품"],
         "crawl-big-category": true,
         "crawl-detail-category": false,
-        "crawl-count": 20,
+        "crawl-count": 80,
         "crawl-page-range": 2,
         "crawl-sleep-time": 12
     }

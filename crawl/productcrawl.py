@@ -111,19 +111,23 @@ class ProductCrawl:
         """파싱 프로세스 시작"""
         self._current_page = 0
         for page_number in range(1, self.calc_page(self.get_products_count())):
-            _url = self.make_url(page_number)
-            logging.info(">>> URL : " + _url)
-            self.driver.get(url=_url)
-            logging.info('>>> start parsing: ' + self._category.get('name') + ' Pg.' + str(page_number))
+            try:
+                _url = self.make_url(page_number)
+                logging.info(">>> URL : " + _url)
+                self.driver.get(url=_url)
+                logging.info('>>> start parsing: ' + self._category.get('name') + ' Pg.' + str(page_number))
 
-            self.scroll_page_to_bottom()
-            logging.info(">>> page scroll end")
+                self.scroll_page_to_bottom()
+                logging.info(">>> page scroll end")
 
-            # Utils.take_a_sleep(1, 2)
+                # Utils.take_a_sleep(1, 2)
 
-            self.parsing_data(self.crawling_html())
+                self.parsing_data(self.crawling_html())
 
-            self._current_page = page_number
+                self._current_page = page_number
+            except Exception as e:
+                logging.debug(">>> Category Collect Err " + str(self._current_page)
+                              + "  name: " + self._category.get('name') + "  Err :" + str(e))
 
         logging.info('>>> end childCategory: ' + self._category.get('name') + ' Pg.' + str(self._current_page))
 
@@ -172,7 +176,12 @@ class ProductCrawl:
         :return:
              self._view_size: 한화면에 로딩하는 상품 개수(20, 40, 60, 80)
         """
-        return math.ceil(products_count/self._view_size)
+        try:
+            _page_count = products_count/self._view_size
+        except ZeroDivisionError:
+            _page_count = 0
+
+        return math.ceil(_page_count)
 
     def _is_ad(self, item) -> bool:
         """
@@ -199,9 +208,9 @@ class ProductCrawl:
         """스크롤 끝가지 내리기"""
         last_height = self.driver.execute_script("return document.body.scrollHeight")
         while True:
-            for _ in range(15):
-                self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.SPACE)
-                Utils.take_a_sleep(1, 2)
+            # for _ in range(15):
+            self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.SPACE)
+            Utils.take_a_sleep(1, 2)
 
             new_height = self.driver.execute_script("return document.body.scrollHeight")
             if new_height == last_height:
