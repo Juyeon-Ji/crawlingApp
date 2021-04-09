@@ -6,6 +6,7 @@
 '''
 import logging
 import datetime
+import math
 
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.keys import Keys
@@ -108,7 +109,7 @@ class ProductCrawl:
     def start_parsing_process(self):
         """파싱 프로세스 시작"""
         idx = 0
-        for page_number in self.get_page_number():
+        for page_number in range(1+self.calc_page(self.get_products_count())):
             _url = self.make_url(page_number)
             self.driver.get(url=_url)
 
@@ -143,6 +144,31 @@ class ProductCrawl:
                 self.get_product_detail_info_items(product), product_info
             )
             self._insert_product_info(product_info)
+
+    def get_products_count(self):
+        """
+        가격 비교탭에서 상품 개수 가져오기
+
+        self._category['cid'] 값이 할당된 이후에 호출되어야 함(url 때문에)
+        :arg
+        :return:
+        """
+        self.driver.get(url=self.make_url(1))
+        element = self.driver.find_element(By.CLASS_NAME, "subFilter_seller_filter__3yvWP")
+        campare_price_tab_item = element.find_element(By.CLASS_NAME, "active")
+        compare_price_product_count = campare_price_tab_item.find_element_by_class_name('subFilter_num__2x0jq')
+
+        return int(compare_price_product_count.text)
+
+    def calc_page(self, products_count:int)-> int:
+        """
+        페이지를 계산해주는 함수
+        :arg
+            :param products_count: 상품 전체 수
+        :return:
+             self._view_size: 한화면에 로딩하는 상품 개수(20, 40, 60, 80)
+        """
+        return math.ceil(products_count/self._view_size)
 
     def _is_ad(self, item) -> bool:
         """
