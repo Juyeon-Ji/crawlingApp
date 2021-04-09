@@ -9,6 +9,7 @@ import datetime
 
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
 
 from common.util import Utils
 from common.config.configmanager import ConfigManager, CrawlConfiguration
@@ -30,6 +31,8 @@ class ProductCrawl:
 
         logging.info('start product crawl')
         # 크롬 selenium Driver - singleton
+        self._selenium = Selenium()
+
         self.driver = Selenium().driver
 
         # 크롤링 설정 정보 관리 - singleton
@@ -42,37 +45,37 @@ class ProductCrawl:
         self._paging_range: int = self.crawl_config.crawl_page_range
         self._view_size: int = self.crawl_config.crawl_count
 
-        self.base_url = "https://search.shopping.naver.com/search/category?catId={0} \
-                 &frm=NVSHMDL&origQuery&pagingIndex={1}&pagingSize={2}&productSet=model \
-                 &query&sort=rel&timestamp=&viewType=list"
-
-        # self.base_url = ['https://search.shopping.naver.com/search/category?catId=',
-        #                 '&frm=NVSHMDL&origQuery&pagingIndex=',
-        #                 '&pagingSize=', '&productSet=model&query&sort=rel&timestamp=&viewType=list']
+        self.base_url = ("https://search.shopping.naver.com/search/category?catId={0}&frm=NVSHMDL&origQuery&pagingIndex={1}&pagingSize={2}&productSet=model&query&sort=rel&timestamp=&viewType=list")
 
         # 먼저 확인해야함. 다시 수집시 DB->Config 정보 셋
-        self._check_crawl_configuration()
+        # TODO: 나중에 처리하도록 수정
+        # self._check_crawl_configuration()
 
         self._result: list = []
 
-        self._cid = None
+        self._category: dict = None
 
         self.productInfo_arr = []
+        self._current_page: int = 0
         self.last_crawled_date_time = datetime.datetime.now()
 
-    # TODO : 값 비교 작업 여기서 해주세요.
-    def _insert_product_info(self, data: dict):
+    def _insert_product_info(self, value: dict):
         """db data insert"""
         try:
-            self.database_manager.find('product', {'nid': data})
+            # TODO: 값 비교는 어디서 하지?
+            self.database_manager.insert_one_mongo(self.PRODUCT_COLLECTION, value)
         except Exception as e:
             logging.error('!!! Fail: Insert data to DB: ', e)
 
     def _check_crawl_configuration(self):
         """Config 정보 set"""
-        _config = self.database_manager.find_one(self.CRAWL_CONFIG_COLLECTION)
-        self._paging_start = _config['start_page']
-        self.crawl_config.crawl_category = _config['crawl_category_list']
+        _config: dict = self.database_manager.find_one(self.CRAWL_CONFIG_COLLECTION)
+
+        if _config.get('start_page') is not None:
+            self._paging_start = _config['start_page']
+
+        if _config.get('crawl_category_list') is not None:
+            self.crawl_config.crawl_category = _config['crawl_category_list']
 
     def _upsert_crawl_configuration(self, start_page):
         """모든 분석이 끝나고 Config 정보 update"""
@@ -96,47 +99,78 @@ class ProductCrawl:
 
     def parse(self):
         _categories: list = self._category_getter()
-        try:
-            for category in _categories:
-                self._cid = category['cid']
 
-                self.start_parsing_process()
+        for category in _categories:
+            self._category = category
 
-        except Exception as e:
-            logging.debug(e)
+            self.start_parsing_process()
 
     def start_parsing_process(self):
         """파싱 프로세스 시작"""
+        idx = 0
         for page_number in self.get_page_number():
             _url = self.make_url(page_number)
             self.driver.get(url=_url)
 
-            logging.info('>>> start parsing: ' + self._cid + ' Pg.' + str(page_number))
+            logging.info('>>> start parsing: ' + self._category.get('name') + ' Pg.' + str(page_number))
 
             self.scroll_page_to_bottom()
 
             Utils.take_a_sleep(2, 4)
 
             self.parsing_data(self.crawling_html())
+            # 이게 맞는지 확인 필요.
+            self.driver.close()
+
+            self._current_page = page_number
+
+    def parsing_data(self, products: [WebElement]):
+        for product in products:
+            Utils.take_a_sleep(1, 3)
+            # 결과 저장 dict 생성
+            if self._is_ad(product):
+                continue
+
+            product_info = dict()
+            product_info['n_cid'] = self._category.get('cid')
+            product_info['cid'] = self._category.get('_id')
+            product_info['paths'] = self._category.get('paths')
+            product_info['cname'] = self._category.get('name')
+
+            self._parsing_product_base_info(product, product_info)
+
+            self.parsing_product_detail_info(
+                self.get_product_detail_info_items(product), product_info
+            )
+            self._insert_product_info(product_info)
+
+    def _is_ad(self, item) -> bool:
+        """
+        :param item: 상품 아이탬
+
+        :return: bool
+        """
+        class_text: str = item.find_element_by_class_name('basicList_item__2XT81').get_attribute('class')
+        return class_text.endswith('ad')
 
     def get_page_number(self) -> int:
-        '''파싱 시작페이지 ~ 파싱 페이지 끝까지 페이지 넘버 넘겨주기'''
+        """파싱 시작페이지 ~ 파싱 페이지 끝까지 페이지 넘버 넘겨주기"""
         # 변수 검증만 해보면됨.
         for page_number in range(self._paging_start, self._paging_start + self._paging_range):
             yield page_number
 
     def make_url(self, paging_index) -> str:
         """category id, 페이지 사이즈, 페이지 넘버를 조합하여 url 생성"""
-        return self.base_url.format(self._cid, paging_index, self._view_size)
+        _cid = self._category['cid']
+        return self.base_url.format(_cid, paging_index, self._view_size)
 
     def scroll_page_to_bottom(self):
         """스크롤 끝가지 내리기"""
         last_height = self.driver.execute_script("return document.body.scrollHeight")
         while True:
-
             for _ in range(15):
-                self.driver.find_element_by_class_name('thumbnail_thumb__3Agq6').send_keys(Keys.SPACE)
-                Utils.take_a_sleep(2, 8)
+                self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.SPACE)
+                Utils.take_a_sleep(1, 2)
 
             new_height = self.driver.execute_script("return document.body.scrollHeight")
             if new_height == last_height:
@@ -145,24 +179,12 @@ class ProductCrawl:
 
     def crawling_html(self) -> [WebElement]:
         """데이터 파싱"""
+        # // *[ @ id = "__next"] / div / div[2] / div / div[3] / div[1] / ul
         crawled_items: [WebElement] = self.driver.find_elements_by_xpath(
             '//*[@id="__next"]/div/div[2]/div/div[3]/div[1]/ul/div/div'
         )
 
         return crawled_items
-
-    def parsing_data(self, products: [WebElement]):
-        for product in products:
-            Utils.take_a_sleep(1, 3)
-            # 내부에서 dict 생성
-            product_info_form: dict = self._parsing_product_base_info(product)
-
-            product_info_form: dict = self.parsing_product_detail_info(
-                self.get_product_detail_info_items(product), product_info_form
-            )
-            # TODO: 1개씩 넣을꺼면 여기서 Insert하세요.
-            # TODO: 모아서 하려면 list에 값을 담아서 for밖에서 넣어주세요.
-            self._insert_product_info(product_info_form)
 
     def get_product_detail_info_items(self, item) -> WebElement:
         """크롤링 된 html에서 상품정보를 갖고 있는 객체 가져오기"""
@@ -175,43 +197,37 @@ class ProductCrawl:
         # basicList_detail__27Krk
         return product_info_item
 
-    def parsing_product_detail_info(self, product_info_data_item, product_info_form) -> dict:
+    def parsing_product_detail_info(self, product_info_data_item, product_info: dict) -> dict:
         """text로 수집된 데이터 ':'로 split 하여 dictionary 형태로 저장"""
         product_info_datas = product_info_data_item.text.split('|')
+
+        _option_info = dict()
         for data in product_info_datas:
             # print(info_obj.text)
             info_data: list = data.split(":")
             if len(info_data) > 1:
                 (key, value) = info_data
-                product_info_form['optionInfo'][key] = value
+                _option_info[key.strip()] = value.strip()
 
-        return product_info_form
+        product_info['optionInfo'] = _option_info
 
-    # TODO: 정리가 필요할듯.
-    def _parsing_product_base_info(self, item) -> dict:
+    def _parsing_product_base_info(self, product, product_info):
         """파싱된 데이터 json 포멧에 맞게 넣도록 Setting
             img link, 상품 상세정보 link, 상품 naver id"""
-        product_info_form: dict = {}
+        title_element = product.find_element_by_class_name('basicList_link__1MaTN')
+        thumbnail_element = product.find_element_by_class_name('thumbnail_thumb__3Agq6')
 
-        title_element = item.find_element_by_class_name('basicList_link__1MaTN')
-        thumbnail_element = item.find_element_by_class_name('thumbnail_thumb__3Agq6')
-
-        product_info_form['catId'] = self._cid
-        product_info_form['productName'] = title_element.text
+        product_info['productName'] = title_element.text
 
         if thumbnail_element:
-            try:
-                element = thumbnail_element.find_element_by_tag_name('img')
-            except Exception as e:
-                element = None
+            element = self._selenium.find_element(By.TAG_NAME, thumbnail_element, 'img')
+
             if element:
-                product_info_form['img'] = element.get_attribute('src')
-            else:
-                pass
+                product_info['img'] = element.get_attribute('src')
 
-        # TODO: 여기 확인필요
         if title_element.get_attribute('href'):
-            product_info_form['url'] = thumbnail_element.get_attribute('href')
-            product_info_form['n_id'] = thumbnail_element.get_attribute('data-nclick').split(':')[-1]
+            product_info['url'] = title_element.get_attribute('href')
+            _value = title_element.get_attribute('data-nclick')
+            _right = (Utils.separate_right(_value, 'i:'))
+            product_info['n_id'] = Utils.separate_left(_right, ',r')
 
-        return product_info_form

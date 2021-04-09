@@ -29,7 +29,7 @@
     ],
     "crawl_config": {
         "exclude-category": ["패션잡화", "화장품/미용","출산/육아","면세점"],
-        "crawl-category-list": ["계절가전", "커튼/블라인드"],
+        "crawl-category-list": ["문구/사무용품"],
         "crawl-big-category": true,
         "crawl-detail-category": false,
         "crawl-count": 20,

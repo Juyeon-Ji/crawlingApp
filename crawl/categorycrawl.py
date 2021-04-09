@@ -127,7 +127,7 @@ class CategoryCrawl(object):
                 time.sleep(1)
                 element = self.driver.find_element_by_xpath(xpath_cate)
 
-        self._insert(None, root_name, None)
+        self._insert(None, root_name, None, True)
         # Root -> sub
         co_col_elements = element.find_elements(By.CLASS_NAME, 'co_col')
 

@@ -84,7 +84,7 @@ class DatabaseManager(metaclass=Singleton):
 
     @staticmethod
     def keyword_query(field, keyword) -> dict:
-        return {field: {'$regex': '(?=.*' + keyword + ')'}}
+        return {field: {'$regex': '(?=.*#' + keyword + '#)'}}
 
     @staticmethod
     def find_query(field, keyword) -> dict:
