@@ -17,7 +17,7 @@ def main():
 
     logger.info('Crawl Test')
 
-    driver = Selenium().driver
+    # driver = Selenium().driver
 
     ConfigManager()
     DatabaseManager()
@@ -29,7 +29,7 @@ def main():
 
     logger.info('Crawl Test End')
 
-    driver.quit()
+    # driver.quit()
 
 
 if __name__ == '__main__':
