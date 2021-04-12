@@ -24,7 +24,7 @@ class CategoryCrawl(object):
     CATEGORY_ID = 50000000  # Default value
 
     COLLECTION = 'category'
-    _DELIMITER = 'cat_id='
+    _DELIMITER = 'category?catId='
     _PATH_TOKEN = '#'
 
     def __init__(self):

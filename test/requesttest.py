@@ -77,6 +77,7 @@ def category(i):
             if element.find('div') is not None:
                 a_tag: HtmlElement = element[0].find('h3').find('a')
                 href = a_tag.get('href')
+                _cid = Utils.separate_right(href, "category?catId=")
                 h3_tag = a_tag.find('strong').text
                 paths = Utils.join_path('#', header, h3_tag)
                 sub_category(element[0], paths)
