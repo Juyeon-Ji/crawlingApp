@@ -17,8 +17,9 @@ from selenium.webdriver.remote.webelement import WebElement
 
 
 class SeleniumCrawlTest(unittest.TestCase):
-    URL = 'https://search.shopping.naver.com/search/category?catId=50000158&frm=NVSHMDL&origQuery&pagingIndex=1&pagingSize=40&productSet=model&query&sort=rel&timestamp=&viewType=list'
-
+    # URL = 'https://search.shopping.naver.com/search/category?catId=50000158&frm=NVSHMDL&origQuery&pagingIndex=1&pagingSize=40&productSet=model&query&sort=rel&timestamp=&viewType=list'
+    URL = 'https://search.shopping.naver.com/category/category/50000008'
+    CATEGORY = 50000000
     def setUp(self) -> None:
         CHROMEDRIVER_PATH = r'D:\_1.project\WEBuilder\python_project\git_crawling\crawlingApp\resource\chromedriver.exe'
         WINDOW_SIZE = "1920,1080"
@@ -33,6 +34,16 @@ class SeleniumCrawlTest(unittest.TestCase):
         self.driver = driver
 
         self.driver.get(self.URL)
+
+    def test_crawl_category_xpath(self):
+        xpath = '//*[@id="__next"]/div/div[2]/div/div'
+        # // *[ @ id = "__next"] / div / div[2] / div
+        # // *[ @ id = "__next"] / div / div[2] / div / div[1]
+        elements: [WebElement] = self.driver.find_elements_by_xpath(xpath)
+        # // *[ @ id = "__next"] / div / div[2] / div / div[1]
+        element: WebElement
+        for element in elements:
+            print('')
 
     def test_url_except(self):
         last_height = self.driver.execute_script("return document.body.scrollHeight")
