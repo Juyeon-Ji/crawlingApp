@@ -10,7 +10,7 @@ class crawlingtest():
 
     except_data_count: int = 0
 
-    URL = "https://search.shopping.naver.com/search/category?catId=50007588&frm=NVSHCAT&origQuery&pagingIndex=90&pagingSize=40&productSet=total&query&sort=rel&timestamp=&viewType=list"
+    URL = "https://search.shopping.naver.com/search/category?catId=50007588&frm=NVSHMDL&origQuery&pagingIndex=1&pagingSize=40&productSet=model&query&sort=rel&timestamp=&viewType=list"
 
 
     headers = {'Content-Type': 'application/json;'}
@@ -25,10 +25,12 @@ class crawlingtest():
 
     data_dict = json.loads(str(json_data.contents[0]))
 
-    product_list = data_dict['props']['pageProps']['initialState']['products']['list']
+    product_info:dict = data_dict['props']['pageProps']['initialState']['products']
+    product_list:dict = product_info['list']
+    product_total_count:dict = product_info['total']
 
     products_data: list = []
-
+    print("총 상품 수: " + str(product_total_count))
     print("수집 시작 데이터 수: " + str(len(product_list)))
     for product in product_list:
         product_data: dict = {}
