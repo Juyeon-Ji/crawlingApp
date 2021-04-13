@@ -6,6 +6,7 @@
 '''
 import logging
 import datetime
+import math
 import time
 
 import requests
@@ -36,8 +37,8 @@ class ProductCrawl:
         self.crawl_config: CrawlConfiguration = ConfigManager().crawl_config
         # start Page Default
         self._paging_start: int = 1
-        self._paging_range: int = 2#self.crawl_config.crawl_page_range
-        self._view_size: int = 20 # self.crawl_config.crawl_count
+        self._paging_range: int = 2  # self.crawl_config.crawl_page_range
+        self._view_size: int = 80  # self.crawl_config.crawl_count
 
 
         # 먼저 확인해야함. 다시 수집시 DB->Config 정보 셋
@@ -82,16 +83,23 @@ class ProductCrawl:
 
         return _categories
 
-    def make_url(self, paging_index: int, frm: str = "NVSHMDL", _filter: str = None) -> str:
+    def make_url(self, paging_index: int, frm: str = "NVSHMDL", _filter: str = "") -> str:
         """category id, 페이지 사이즈, 페이지 넘버를 조합하여 url 생성"""
-        _url = ("https://search.shopping.naver.com/search/category?catId={0}&frm=NVSHMDL&origQuery&pagingIndex={1}&pagingSize={2}&productSet=model&query&sort=rel&timestamp=&viewType=list")
+        _url = ("https://search.shopping.naver.com/search/category?catId={0}&frm={1}{2}&origQuery&pagingIndex={3}&pagingSize={4}&productSet=model&query&sort=rel&timestamp=&viewType=list")
         _cid = self._category['cid']
-        return _url.format(_cid, paging_index, self._view_size)
+        return _url.format(_cid, frm, _filter, paging_index, self._view_size)
 
     def parse(self):
         """ 외부에서 파싱을 하기 위해 호출하는 함수 """
         # 카테고리 데이터 가져오기 임시 데이터
-        _categories: list = self._category_getter()
+        # _categories: list = self._category_getter()
+        # 카테고리 샘플 데이터
+        _categories = [{
+            'cid': '50003568',
+            '_id': '50000158',
+            'paths': '생활/건강>문구/사무용품',
+            'name': '문구사무용품'
+        }]
 
         for category in _categories:
             self._category = category
@@ -118,14 +126,16 @@ class ProductCrawl:
         logging.info('>>> end childCategory: ' + self._category.get('name') + ' Pg.' + str(self._current_page))
 
     def _filter_parse_recursive(self, min_value, max_value):
-        _param = ("&maxPrice={0}&minPrice={1}".format(str(min_value), str(max_value)))
+        _param = ("&maxPrice={0}&minPrice={1}".format(str(max_value), str(min_value)))
         _url = self.make_url(1, "NVSHPRC", _param)
         _total_count, _filter = self._get_base_data(_url)
         _is_oversize = _total_count > 8000
         _page_size = Utils.calc_page(_total_count, self._view_size)
         if _is_oversize:
             # TODO: min, max 계산해서 재귀 돌수 있도록 하면될거같 은데..
-            self._filter_parse_recursive()
+            half_pric = math.ceil(min_value + max_value / 2)
+            self._filter_parse_recursive(min_value, half_pric)
+            self._filter_parse_recursive(half_pric, max_value)
 
         else:
             self._execute_parse(_page_size)
@@ -208,10 +218,10 @@ class ProductCrawl:
                     if product_item.get('adId') is None:
                         '''광고 데이터가 아닌 경우에만 수집'''
 
-                        product_data = self._set_category_info(product_data)  # 카테고리 정보 Setting
-                        product_data = self._set_product_info(product_data, product_item) # 상품 정보 Setting
+                        self._set_category_info(product_data)  # 카테고리 정보 Setting
+                        self._set_product_info(product_data, product_item) # 상품 정보 Setting
 
-                        self._insert_product_info(product_info)
+                        self._insert_product_info(product_data)
                         products_data.append(product_data)
                     else:
                         self._excepted_data_count += 1
@@ -233,7 +243,6 @@ class ProductCrawl:
         product_data['cid'] = self._category.get('_id')
         product_data['paths'] = self._category.get('paths')
         product_data['cname'] = self._category.get('name')
-        return product_data
 
     def _set_product_info(self, product_data: dict, product_item):
         product_data['id'] = product_item.get('id')
@@ -249,16 +258,15 @@ class ProductCrawl:
 
             product_data['option'] = dict(zip(product_option_key, product_option_value))
 
-        return product_data
-
     def _insert_product_info(self, value: dict):
         """db data insert"""
-        try:
-            # TODO: 값 비교는 어디서 하지?
-            _selection = self.database_manager.find_query("n_id", value.get("n_id"))
-            self.database_manager.update(self.PRODUCT_COLLECTION, _selection, value)
-        except Exception as e:
-            logging.error('!!! Fail: Insert data to DB: ', e)
+        logging.info(value.get('productTitle'))
+        # try:
+        #     # TODO: 값 비교는 어디서 하지?
+        #     _selection = self.database_manager.find_query("n_id", value.get("n_id"))
+        #     self.database_manager.update(self.PRODUCT_COLLECTION, _selection, value)
+        # except Exception as e:
+        #     logging.error('!!! Fail: Insert data to DB: ', e)
 
     def _get_base_data(self, url):
         _data = self._get_product_json(url)
