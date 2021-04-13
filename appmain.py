@@ -10,7 +10,7 @@ from common.database.dbmanager import DatabaseManager
 from common.config.configmanager import ConfigManager
 from common.driver.seleniumdriver import Selenium
 from common.log import make_logger
-
+import pickle
 
 def main():
     logger = make_logger()
@@ -22,8 +22,9 @@ def main():
     ConfigManager()
     DatabaseManager()
 
+    # pickle.dumps(DatabaseManager())
     # 카테고리 파싱 주석
-    CategoryCrawl().parse()
+    CategoryCrawl().run()
 
     # ProductCrawl()
 

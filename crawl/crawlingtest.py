@@ -24,7 +24,7 @@ def crawlingtest(i):
 
     product_info:dict = data_dict['props']['pageProps']['initialState']['products']
     product_list:dict = product_info['list']
-    product_total_count:dict = product_info['total']
+    product_total_count: dict = product_info['total']
 
     products_data: list = []
     print("총 상품 수: " + str(product_total_count))

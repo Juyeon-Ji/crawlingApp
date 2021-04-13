@@ -12,7 +12,7 @@ import requests
 import re
 import json
 from bs4 import BeautifulSoup  # BeautifulSoup import
-
+from operator import eq
 from common.config.configmanager import ConfigManager, CrawlConfiguration
 from common.database.dbmanager import DatabaseManager
 
@@ -30,11 +30,10 @@ class ProductCrawl:
     _excepted_data_count = 0
 
     def __init__(self):
-
         logging.info('start product crawl')
         # Database manager - 데이터 조회 및 저장을 여기서 합니다. - singleton
         self.database_manager = DatabaseManager()
-
+        self.crawl_config: CrawlConfiguration = ConfigManager().crawl_config
         # start Page Default
         self._paging_start: int = 1
         self._paging_range: int = 2#self.crawl_config.crawl_page_range
@@ -53,7 +52,15 @@ class ProductCrawl:
         self._current_page: int = 0
         self.last_crawled_date_time = datetime.datetime.now()
 
+    def _upsert_crawl_configuration(self, start_page):
+        """모든 분석이 끝나고 Config 정보 update"""
+        # 조건
+        _filter = {}
+        # 변경 데이터
+        _config = dict()
+        _config['start_page'] = start_page
 
+        self.database_manager.update(self.CRAWL_CONFIG_COLLECTION, _filter, _config)
 
     def _check_crawl_configuration(self):
         """Config 정보 set"""
@@ -65,8 +72,6 @@ class ProductCrawl:
         if _config.get('crawl_category_list') is not None:
             self.crawl_config.crawl_category = _config['crawl_category_list']
 
-
-
     def _category_getter(self) -> list:
         """ 카테고리 목록 조회해서 분석
         :return category 목록들"""
@@ -77,57 +82,87 @@ class ProductCrawl:
 
         return _categories
 
+    def make_url(self, paging_index: int, frm: str = "NVSHMDL", _filter: dict = None) -> str:
+        """category id, 페이지 사이즈, 페이지 넘버를 조합하여 url 생성"""
+        _url = ("https://search.shopping.naver.com/search/category?catId={0}&frm=NVSHMDL&origQuery&pagingIndex={1}&pagingSize={2}&productSet=model&query&sort=rel&timestamp=&viewType=list")
+        _cid = self._category['cid']
+        return _url.format(_cid, paging_index, self._view_size)
+
     def parse(self):
-        ''' 외부에서 파싱을 하기 위해 호출하는 함수'''
+        """ 외부에서 파싱을 하기 위해 호출하는 함수 """
         # 카테고리 데이터 가져오기 임시 데이터
-        # _categories: list = self._category_getter()
-        #
-        # for category in _categories:
-        #     self._category = category
-        #
-        #     self.start_parsing_process()
+        _categories: list = self._category_getter()
 
-        # 카테고리 샘플 데이터
-        self._category = {
-            'cid': '50000158',
-            '_id': '50000158',
-            'paths': '생활/건강>문구/사무용품',
-            'name': '문구사무용품'
-        }
-
-        self._start_parsing_process()
+        for category in _categories:
+            self._category = category
+            self._start_parsing_process()
 
     def _start_parsing_process(self):
         """파싱 프로세스 시작"""
         self._current_page = 0
+        # Default = 1
+        _url = self.make_url(paging_index=1)
+        (_total_count, _filter) = self._get_base_data(_url)
 
-        for page_number in range(1, 101):
+        # Page 조건 변경 필요
+        _is_oversize = _total_count > 8000
+        # Page 계산
+        _page_size = Utils.calc_page(_total_count, self._view_size)
+
+        if _is_oversize:
+            self._filter_parse(_filter)
+
+        else:
+            self._execute_parse(_page_size)
+
+        logging.info('>>> end childCategory: ' + self._category.get('name') + ' Pg.' + str(self._current_page))
+
+    def _filter_parse(self, filters: list):
+        for _filter in filters:
+            _filterAction = _filter.get('filterAction')
+            _separator = "-"  # default = -
+            _paramName = None
+            if _filterAction is not None:
+                _separator = _filterAction.get('separator')
+                # price split
+            _value: str = _filter.get('value')
+            _param = ""
+            if _value is not None:
+                (_min, _max) = (int(_price) for _price in _value.split(_separator))
+                _param = ("&maxPrice=%d&minPrice=%d" % _max, _min)
+
+            _url = self.make_url(1, "NVSHPRC", _param)
+
+            _total_count, _filter = self._get_base_data(_url)
+
+    def _execute_parse(self, page_number):
+
+        for page_number in range(1, page_number):
             time.sleep(0.5)
             try:
                 _url = self.make_url(page_number)
-                _headers = {'Content-Type': 'application/json;'}
+
+                self.parse_data(self._get_product_json(_url))
 
                 logging.info(">>> URL : " + _url)
-
                 logging.info('>>> start parsing: ' + self._category.get('name') + ' Pg.' + str(page_number))
-                req = requests.get(_url, _headers)
-
-                self.parsing_data(self._get_product_data(req))
 
                 self._current_page = page_number
             except Exception as e:
                 logging.debug(">>> Category Collect Err " + str(self._current_page)
                               + "  name: " + self._category.get('name') + "  Err :" + str(e))
 
-        logging.info('>>> end childCategory: ' + self._category.get('name') + ' Pg.' + str(self._current_page))
-
-    def _get_product_data(self, req) -> dict:
-        '''
+    def _get_product_json(self, url) -> dict:
+        """
         상품 정보 가져오기
         :arg
-        :param req: request 정보
+        :param url: request URL
         :return: data_dict 상품 정보
-        '''
+        """
+        # header 추가 필요.
+        _headers = {'Content-Type': 'application/json;'}
+        req = requests.get(url, _headers)
+
         html = req.text
         soup = BeautifulSoup(html, 'html.parser')  # html.parser를 사용해서 soup에 넣겠다
 
@@ -137,28 +172,27 @@ class ProductCrawl:
 
         return data_dict
 
-    def parsing_data(self, data_dict):
-        ''' 데이터 파싱 '''
-        product_info: dict = data_dict.get('props').get('pageProps').get('initialState').get('products')
+    def parse_data(self, data_dict):
+        """ 데이터 파싱 """
+        product_info: dict = self._get_data(data_dict, 'products')
         if product_info is not None:
             '''수집된 데이터가 있는 경우'''
 
             product_list: list = product_info.get('list')
-            product_total_count: dict = product_info.get('total')
 
-            products_data: list()
+            products_data = list()
             self._excepted_data_count = 0
 
             logging.info("수집 시작 - 상품 데이터 수: " + str(len(product_list)))
-            if len(product_list) >0:
+            if len(product_list) > 0:
                 for product in product_list:
-                    product_data: dict()
+                    product_data = dict()
 
                     product_item = product.get('item')
                     if product_item.get('adId') is None:
                         '''광고 데이터가 아닌 경우에만 수집'''
 
-                        product_data = self._set_category_info(product_data) # 카테고리 정보 Setting
+                        product_data = self._set_category_info(product_data)  # 카테고리 정보 Setting
                         product_data = self._set_product_info(product_data, product_item) # 상품 정보 Setting
 
                         self._insert_product_info(product_info)
@@ -186,7 +220,6 @@ class ProductCrawl:
         return product_data
 
     def _set_product_info(self, product_data: dict, product_item):
-
         product_data['id'] = product_item.get('id')
         product_data['imageUrl'] = product_item.get('imageUrl')
         product_data['productTitle'] = product_item.get('productTitle')
@@ -195,7 +228,7 @@ class ProductCrawl:
 
         if product_item.get('attributeValue') is not None:
             # 옵션 정보가 있는 경우
-            product_option_key: list  = product_item.get('attributeValue').split('|') # 옵션 키값
+            product_option_key: list = product_item.get('attributeValue').split('|') # 옵션 키값
             product_option_value: list = product_item.get('characterValue').split('|') # 옵션 벨류값
 
             product_data['option'] = dict(zip(product_option_key, product_option_value))
@@ -211,18 +244,35 @@ class ProductCrawl:
         except Exception as e:
             logging.error('!!! Fail: Insert data to DB: ', e)
 
-    def _upsert_crawl_configuration(self, start_page):
-        """모든 분석이 끝나고 Config 정보 update"""
-        # 조건
-        _filter = {}
-        # 변경 데이터
-        _config = dict()
-        _config['start_page'] = start_page
+    def _get_base_data(self, url) -> (int, dict):
+        _data = self._get_product_json(url)
 
-        self.database_manager.update(self.CRAWL_CONFIG_COLLECTION, _filter, _config)
+        _total_count = 0
+        value_filters = None
 
-    def make_url(self, paging_index) -> str:
-        """category id, 페이지 사이즈, 페이지 넘버를 조합하여 url 생성"""
-        _url = ("https://search.shopping.naver.com/search/category?catId={0}&frm=NVSHMDL&origQuery&pagingIndex={1}&pagingSize={2}&productSet=model&query&sort=rel&timestamp=&viewType=list")
-        _cid = self._category['cid']
-        return _url.format(_cid, paging_index, self._view_size)
+        if _data is not None:
+            products = self._get_data(_data, 'products')
+            if products is not None:
+                _total_count = int(products.get('total'))
+
+            filters = self._get_data(_data, 'mainFilters')
+            if filters is not None:
+                value_filters = self._get_filter(filters)
+
+        return _total_count, value_filters
+
+    def _get_data(self, data: dict, _type: str):
+        return data.get('props', {}).get('pageProps', {}).get('initialState', {}).get(_type)
+
+    def _get_filter(self, main_filters: dict) -> dict:
+        value_filters = None
+
+        for _filter in main_filters:
+            _filterType: str = _filter.get('filterType')
+            if (_filterType is not None) and (eq(_filterType, 'price')):
+                value_filters = _filter.get('filterValues')
+                if value_filters is not None:
+                    break
+
+        return value_filters
+

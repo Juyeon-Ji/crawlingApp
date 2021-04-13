@@ -1,6 +1,7 @@
 import random
 import logging
 import time
+import math
 
 class Singleton(type):
     _instances = {}
@@ -45,3 +46,20 @@ class Utils:
                 return value
             else:
                 return value[0: x]
+
+    @classmethod
+    def calc_page(cls, products_count, view_size: int) -> int:
+        """
+        페이지를 계산해주는 함수
+        :arg
+            :param products_count: 상품 전체 수
+            :param view_size: View Size
+        :return:
+             self._view_size: 한화면에 로딩하는 상품 개수(20, 40, 60, 80)
+        """
+        try:
+            _page_count = products_count/view_size
+        except ZeroDivisionError:
+            _page_count = 0
+
+        return math.ceil(_page_count)
