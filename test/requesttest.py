@@ -64,6 +64,8 @@ def parse(page: int):
             # price split
 
         _value: str = _filter.get('value')
+        _min = 0
+        _max = 0
         if _value is not None:
             _min, _max = (int(_price) for _price in _value.split(_separator))
 
@@ -72,7 +74,9 @@ def parse(page: int):
             pass
             # _min_price, _max_price = _paramName.split(_separator)
 
-        _param = ("&maxPrice=%d&minPrice=%d" % _max, _min)
+        _param = ("&maxPrice={0}&minPrice={1}".format(str(_max), str(_min)))
+
+        print(_param)
 
 
 
@@ -182,14 +186,5 @@ def main():
 
 
 if __name__ == '__main__':
-    my_dict = {'level_1': {
-        'level_1': {
-            'level_3': 'more_data'
-        }
-    }
-    }
-    result = my_dict.get('level_1', {}).get('level_2', {}).get('level_3')
-    # result -> 'more_data'
-    none_result = my_dict.get('level_1', {}).get('what_level', {}).get('level_3')
-    # none_result -> None
+    main()
     pass

@@ -82,7 +82,7 @@ class ProductCrawl:
 
         return _categories
 
-    def make_url(self, paging_index: int, frm: str = "NVSHMDL", _filter: dict = None) -> str:
+    def make_url(self, paging_index: int, frm: str = "NVSHMDL", _filter: str = None) -> str:
         """category id, 페이지 사이즈, 페이지 넘버를 조합하여 url 생성"""
         _url = ("https://search.shopping.naver.com/search/category?catId={0}&frm=NVSHMDL&origQuery&pagingIndex={1}&pagingSize={2}&productSet=model&query&sort=rel&timestamp=&viewType=list")
         _cid = self._category['cid']
@@ -102,7 +102,7 @@ class ProductCrawl:
         self._current_page = 0
         # Default = 1
         _url = self.make_url(paging_index=1)
-        (_total_count, _filter) = self._get_base_data(_url)
+        _total_count, _filter = self._get_base_data(_url)
 
         # Page 조건 변경 필요
         _is_oversize = _total_count > 8000
@@ -117,7 +117,22 @@ class ProductCrawl:
 
         logging.info('>>> end childCategory: ' + self._category.get('name') + ' Pg.' + str(self._current_page))
 
+    def _filter_parse_recursive(self, min_value, max_value):
+        _param = ("&maxPrice={0}&minPrice={1}".format(str(min_value), str(max_value)))
+        _url = self.make_url(1, "NVSHPRC", _param)
+        _total_count, _filter = self._get_base_data(_url)
+        _is_oversize = _total_count > 8000
+        _page_size = Utils.calc_page(_total_count, self._view_size)
+        if _is_oversize:
+            # TODO: min, max 계산해서 재귀 돌수 있도록 하면될거같 은데..
+            self._filter_parse_recursive()
+
+        else:
+            self._execute_parse(_page_size)
+        pass
+
     def _filter_parse(self, filters: list):
+        # 한번만 호출된다.
         for _filter in filters:
             _filterAction = _filter.get('filterAction')
             _separator = "-"  # default = -
@@ -127,13 +142,14 @@ class ProductCrawl:
                 # price split
             _value: str = _filter.get('value')
             _param = ""
+            _min = 0
+            _max = 0
             if _value is not None:
-                (_min, _max) = (int(_price) for _price in _value.split(_separator))
-                _param = ("&maxPrice=%d&minPrice=%d" % _max, _min)
+                _min, _max = (int(_price) for _price in _value.split(_separator))
 
-            _url = self.make_url(1, "NVSHPRC", _param)
+            self._filter_parse_recursive(_min, _max)
 
-            _total_count, _filter = self._get_base_data(_url)
+
 
     def _execute_parse(self, page_number):
 
@@ -244,7 +260,7 @@ class ProductCrawl:
         except Exception as e:
             logging.error('!!! Fail: Insert data to DB: ', e)
 
-    def _get_base_data(self, url) -> (int, dict):
+    def _get_base_data(self, url):
         _data = self._get_product_json(url)
 
         _total_count = 0
