@@ -1,17 +1,14 @@
 import requests
-import uuid
 import re
 import json
 from bs4 import BeautifulSoup  # BeautifulSoup import
 
+def crawlingtest(i):
 
-class crawlingtest():
-    # print(uuid.uuid4())
 
     except_data_count: int = 0
 
-    URL = "https://search.shopping.naver.com/search/category?catId=50007588&frm=NVSHMDL&origQuery&pagingIndex=1&pagingSize=40&productSet=model&query&sort=rel&timestamp=&viewType=list"
-
+    URL = "https://search.shopping.naver.com/search/category?catId=50007588&frm=NVSHMDL&origQuery&pagingIndex="+str(i)+"&pagingSize=20&productSet=model&query&sort=rel&timestamp=&viewType=list"
 
     headers = {'Content-Type': 'application/json;'}
 
@@ -59,5 +56,7 @@ class crawlingtest():
     if len(product_list) != len(products_data) + except_data_count:
         print("!!!! EXCEPTION: 데이터 수 확인이 필요 합니다.")
 
+    print(products_data)
 if __name__ == "__main__":
-	crawlingtest()
+    for i in range(1, 3):
+	    crawlingtest(i)

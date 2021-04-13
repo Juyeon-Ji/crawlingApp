@@ -7,17 +7,15 @@
 import logging
 import datetime
 import math
+import requests
+import re
+import json
+from bs4 import BeautifulSoup  # BeautifulSoup import
 
-from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
-
-from common.util import Utils
 from common.config.configmanager import ConfigManager, CrawlConfiguration
 from common.database.dbmanager import DatabaseManager
-from common.driver.seleniumdriver import Selenium
 
-
+from common.util import Utils
 
 class ProductCrawl:
     '''
@@ -28,25 +26,21 @@ class ProductCrawl:
     PRODUCT_COLLECTION = "product"
     CRAWL_CONFIG_COLLECTION = "crawl_config"
 
+    _excepted_data_count = 0
+
     def __init__(self):
 
         logging.info('start product crawl')
-        # 크롬 selenium Driver - singleton
-        self._selenium = Selenium()
 
-        self.driver = Selenium().driver
 
-        # 크롤링 설정 정보 관리 - singleton
-        self.crawl_config: CrawlConfiguration = ConfigManager().crawl_config
         # Database manager - 데이터 조회 및 저장을 여기서 합니다. - singleton
         self.database_manager = DatabaseManager()
 
         # start Page Default
         self._paging_start: int = 1
-        self._paging_range: int = self.crawl_config.crawl_page_range
-        self._view_size: int = self.crawl_config.crawl_count
+        self._paging_range: int = 2#self.crawl_config.crawl_page_range
+        self._view_size: int = 20 # self.crawl_config.crawl_count
 
-        # self.base_url =
 
         # 먼저 확인해야함. 다시 수집시 DB->Config 정보 셋
         # TODO: 나중에 처리하도록 수정
@@ -60,14 +54,7 @@ class ProductCrawl:
         self._current_page: int = 0
         self.last_crawled_date_time = datetime.datetime.now()
 
-    def _insert_product_info(self, value: dict):
-        """db data insert"""
-        try:
-            # TODO: 값 비교는 어디서 하지?
-            _selection = self.database_manager.find_query("n_id", value.get("n_id"))
-            self.database_manager.update(self.PRODUCT_COLLECTION, _selection, value)
-        except Exception as e:
-            logging.error('!!! Fail: Insert data to DB: ', e)
+
 
     def _check_crawl_configuration(self):
         """Config 정보 set"""
@@ -79,15 +66,7 @@ class ProductCrawl:
         if _config.get('crawl_category_list') is not None:
             self.crawl_config.crawl_category = _config['crawl_category_list']
 
-    def _upsert_crawl_configuration(self, start_page):
-        """모든 분석이 끝나고 Config 정보 update"""
-        # 조건
-        _filter = {}
-        # 변경 데이터
-        _config = dict()
-        _config['start_page'] = start_page
 
-        self.database_manager.update(self.CRAWL_CONFIG_COLLECTION, _filter, _config)
 
     def _category_getter(self) -> list:
         """ 카테고리 목록 조회해서 분석
@@ -99,30 +78,47 @@ class ProductCrawl:
 
         return _categories
 
+    def make_url(self, paging_index) -> str:
+        """category id, 페이지 사이즈, 페이지 넘버를 조합하여 url 생성"""
+        _url = ("https://search.shopping.naver.com/search/category?catId={0}&frm=NVSHMDL&origQuery&pagingIndex={1}&pagingSize={2}&productSet=model&query&sort=rel&timestamp=&viewType=list")
+        _cid = self._category['cid']
+        return _url.format(_cid, paging_index, self._view_size)
+
     def parse(self):
-        _categories: list = self._category_getter()
+        # 카테고리 데이터 가져오기 임시 데이터
+        # _categories: list = self._category_getter()
+        #
+        # for category in _categories:
+        #     self._category = category
+        #
+        #     self.start_parsing_process()
 
-        for category in _categories:
-            self._category = category
+        # 카테고리 샘플 데이터
+        self._category = {
+            'cid': '50000158',
+            '_id': '50000158',
+            'paths': '생활/건강>문구/사무용품',
+            'name': '문구사무용품'
+        }
 
-            self.start_parsing_process()
+        self.start_parsing_process()
 
     def start_parsing_process(self):
         """파싱 프로세스 시작"""
         self._current_page = 0
-        for page_number in range(1, self.calc_page(self.get_products_count())):
+
+        for page_number in range(1, 101):
+            Utils.take_a_sleep(1, 2)
             try:
                 _url = self.make_url(page_number)
+                _headers = {'Content-Type': 'application/json;'}
+
                 logging.info(">>> URL : " + _url)
-                self.driver.get(url=_url)
+
                 logging.info('>>> start parsing: ' + self._category.get('name') + ' Pg.' + str(page_number))
+                req = requests.get(_url, _headers)
 
-                self.scroll_page_to_bottom()
-                logging.info(">>> page scroll end")
-
-                # Utils.take_a_sleep(1, 2)
-
-                self.parsing_data(self.crawling_html())
+                self.parsing_data(req)
 
                 self._current_page = page_number
             except Exception as e:
@@ -131,143 +127,73 @@ class ProductCrawl:
 
         logging.info('>>> end childCategory: ' + self._category.get('name') + ' Pg.' + str(self._current_page))
 
-    def parsing_data(self, products: [WebElement]):
-        for product in products:
-            Utils.take_a_sleep(1, 2)
-            # 결과 저장 dict 생성
-            if self._is_ad(product):
-                continue
+    def parsing_data(self, req):
 
-            product_info = dict()
-            product_info['n_cid'] = self._category.get('cid')
-            product_info['cid'] = self._category.get('_id')
-            product_info['paths'] = self._category.get('paths')
-            product_info['cname'] = self._category.get('name')
+        html = req.text
+        soup = BeautifulSoup(html, 'html.parser')  # html.parser를 사용해서 soup에 넣겠다
 
-            self._parsing_product_base_info(product, product_info)
+        json_data = soup.find('script', text=re.compile('application/json'))
 
-            self.parsing_product_detail_info(
-                self.get_product_detail_info_items(product), product_info
-            )
-            self._insert_product_info(product_info)
+        data_dict = json.loads(str(json_data.contents[0]))
 
-    def get_products_count(self):
-        """
-        가격 비교탭에서 상품 개수 가져오기
+        product_info: dict = data_dict['props']['pageProps']['initialState']['products']
+        product_list: dict = product_info['list']
+        product_total_count: dict = product_info['total']
 
-        self._category['cid'] 값이 할당된 이후에 호출되어야 함(url 때문에)
-        :arg
-        :return:
-        """
-        _url = self.make_url(1)
-        self.driver.get(url=_url)
-        element = self.driver.find_element(By.CLASS_NAME, "subFilter_seller_filter__3yvWP")
-        compare_price_tab_item = element.find_element(By.CLASS_NAME, "active")
-        _count: str = compare_price_tab_item.find_element_by_class_name('subFilter_num__2x0jq').text
-        _count = _count.replace(",", "")
+        products_data: list = []
+        self._excepted_data_count = 0
+        # print("총 상품 수: " + str(product_total_count))
+        print("수집 시작 - 상품 데이터 수: " + str(len(product_list)))
 
-        return int(_count)
+        for product in product_list:
+            product_data: dict()
 
-    def calc_page(self, products_count: int) -> int:
-        """
-        페이지를 계산해주는 함수
-        :arg
-            :param products_count: 상품 전체 수
-        :return:
-             self._view_size: 한화면에 로딩하는 상품 개수(20, 40, 60, 80)
-        """
+            product_data['n_cid'] = self._category.get('cid')
+            product_data['cid'] = self._category.get('_id')
+            product_data['paths'] = self._category.get('paths')
+            product_data['cname'] = self._category.get('name')
+
+            product_item = product['item']
+            if ("adId" not in product_item):
+                product_data['id'] = product_item['id']
+                product_data['imageUrl'] = product_item['imageUrl']
+                product_data['productTitle'] = product_item['productTitle']
+
+                product_data['option'] = {}
+                if (product_item['attributeValue']):
+                    product_data['productOptionKey'] = product_item['attributeValue'].split('|')
+                    product_data['productOptionValue'] = product_item['characterValue'].split('|')
+
+                    product_data['option'] = dict(
+                        zip(product_data['productOptionKey'], product_data['productOptionValue']))
+
+                self._insert_product_info(product_info)
+                products_data.append(product_data)
+            else:
+                self._excepted_data_count += 1
+                print(str(self._excepted_data_count) + ".광고 데이터 제외")
+
+        print("수집 완료 - 수집된 데이터 수: " + str(len(products_data)))
+        print("수집 제외된 데이터 수: " + str(self._excepted_data_count))
+
+        if len(product_list) != len(products_data) + self._excepted_data_count:
+            print("!!!! EXCEPTION: 데이터 수 확인이 필요 합니다.")
+
+    def _insert_product_info(self, value: dict):
+        """db data insert"""
         try:
-            _page_count = products_count/self._view_size
-        except ZeroDivisionError:
-            _page_count = 0
+            # TODO: 값 비교는 어디서 하지?
+            _selection = self.database_manager.find_query("n_id", value.get("n_id"))
+            self.database_manager.update(self.PRODUCT_COLLECTION, _selection, value)
+        except Exception as e:
+            logging.error('!!! Fail: Insert data to DB: ', e)
 
-        return math.ceil(_page_count)
+    def _upsert_crawl_configuration(self, start_page):
+        """모든 분석이 끝나고 Config 정보 update"""
+        # 조건
+        _filter = {}
+        # 변경 데이터
+        _config = dict()
+        _config['start_page'] = start_page
 
-    def _is_ad(self, item) -> bool:
-        """
-        :param item: 상품 아이탬
-
-        :return: bool
-        """
-        class_text: str = item.find_element_by_class_name('basicList_item__2XT81').get_attribute('class')
-        return class_text.endswith('ad')
-
-    # def get_page_number(self) -> int:
-    #     """파싱 시작페이지 ~ 파싱 페이지 끝까지 페이지 넘버 넘겨주기"""
-    #     # 변수 검증만 해보면됨.
-    #     for page_number in range(self._paging_start, self._paging_start + self._paging_range):
-    #         yield page_number
-
-    def make_url(self, paging_index) -> str:
-        """category id, 페이지 사이즈, 페이지 넘버를 조합하여 url 생성"""
-        _url = ("https://search.shopping.naver.com/search/category?catId={0}&frm=NVSHMDL&origQuery&pagingIndex={1}&pagingSize={2}&productSet=model&query&sort=rel&timestamp=&viewType=list")
-        _cid = self._category['cid']
-        return _url.format(_cid, paging_index, self._view_size)
-
-    def scroll_page_to_bottom(self):
-        """스크롤 끝가지 내리기"""
-        last_height = self.driver.execute_script("return document.body.scrollHeight")
-        while True:
-            # for _ in range(15):
-            self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.SPACE)
-            Utils.take_a_sleep(1, 2)
-
-            new_height = self.driver.execute_script("return document.body.scrollHeight")
-            if new_height == last_height:
-                break
-            last_height = new_height
-
-    def crawling_html(self) -> [WebElement]:
-        """데이터 파싱"""
-        # // *[ @ id = "__next"] / div / div[2] / div / div[3] / div[1] / ul
-        crawled_items: [WebElement] = self.driver.find_elements_by_xpath(
-            '//*[@id="__next"]/div/div[2]/div/div[3]/div[1]/ul/div/div'
-        )
-
-        return crawled_items
-
-    def get_product_detail_info_items(self, item) -> WebElement:
-        """크롤링 된 html에서 상품정보를 갖고 있는 객체 가져오기"""
-
-        product_info_item = item.find_element_by_class_name('basicList_detail_box__3ta3h')
-        self.driver.execute_script("arguments[0].style.overflow = 'visible';", product_info_item)
-        Utils.take_a_sleep(1, 3)
-        # List -> WebElement 로 변경함.
-        # product_info_data_items = product_info_item.find_elements_by_class_name('basicList_detail__27Krk')
-        # basicList_detail__27Krk
-        return product_info_item
-
-    def parsing_product_detail_info(self, product_info_data_item, product_info: dict) -> dict:
-        """text로 수집된 데이터 ':'로 split 하여 dictionary 형태로 저장"""
-        product_info_datas = product_info_data_item.text.split('|')
-
-        _option_info = dict()
-        for data in product_info_datas:
-            # print(info_obj.text)
-            info_data: list = data.split(":")
-            if len(info_data) > 1:
-                (key, value) = info_data
-                _option_info[key.strip()] = value.strip()
-
-        product_info['optionInfo'] = _option_info
-
-    def _parsing_product_base_info(self, product, product_info):
-        """파싱된 데이터 json 포멧에 맞게 넣도록 Setting
-            img link, 상품 상세정보 link, 상품 naver id"""
-        title_element = product.find_element_by_class_name('basicList_link__1MaTN')
-        thumbnail_element = product.find_element_by_class_name('thumbnail_thumb__3Agq6')
-
-        product_info['productName'] = title_element.text
-
-        if thumbnail_element:
-            element = self._selenium.find_element(By.TAG_NAME, thumbnail_element, 'img')
-
-            if element:
-                product_info['img'] = element.get_attribute('src')
-
-        if title_element.get_attribute('href'):
-            product_info['url'] = title_element.get_attribute('href')
-            _value = title_element.get_attribute('data-nclick')
-            _right = (Utils.separate_right(_value, 'i:'))
-            product_info['n_id'] = Utils.separate_left(_right, ',r')
-
+        self.database_manager.update(self.CRAWL_CONFIG_COLLECTION, _filter, _config)
