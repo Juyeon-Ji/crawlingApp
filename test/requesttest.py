@@ -141,13 +141,22 @@ def sub_category(element: HtmlElement, root_path: str):
 
 
 def category(i):
-    URL = "https://search.shopping.naver.com/category/category/" + str(i)
+    # URL = "https://search.shopping.naver.com/category/category/" + str(i)
+    URL = "https://search.shopping.naver.com/too-many-request"
 
     headers = {'Content-Type': 'application/json;'}
 
     req = requests.get(URL, headers)
 
     content = req.content
+    soup = BeautifulSoup(content, 'html.parser')  # html.parser를 사용해서 soup에 넣겠다
+
+    json_data = soup.find('script', text=re.compile('application/json'))
+    try:
+        data_dict = json.loads(str(json_data.contents[0]))
+
+    except Exception as e:
+        print('')
 
     # tree: HtmlElement = etree.fromstring(content)
     tree: HtmlElement = html.fromstring(content)
@@ -180,7 +189,7 @@ def main():
 
     # pool = Pool(num_cores)
     # pool.map(parse, range(1, 5))
-    list(map(parse, range(3, 5)))
+    list(map(category, range(3, 5)))
 
     print("***run time(sec) :", int(time.time()) - start)
 

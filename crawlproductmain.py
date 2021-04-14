@@ -9,6 +9,9 @@ from common.database.dbmanager import DatabaseManager
 from common.config.configmanager import ConfigManager
 from common.driver.seleniumdriver import Selenium
 from common.log import make_logger
+import pandas
+from openpyxl import Workbook
+
 
 
 def main():
@@ -16,10 +19,10 @@ def main():
 
     logger.info('Crawl Test')
 
-    driver = Selenium().driver
+    # driver = Selenium().driver
 
     ConfigManager()
-    DatabaseManager()
+    db = DatabaseManager()
 
     # 카테고리 파싱 주석
     # CategoryCrawl().parse()
@@ -27,7 +30,7 @@ def main():
     ProductCrawl().parse()
 
     logger.info('Crawl Test End')
-    driver.quit()
+    # driver.quit()
 
 
 if __name__ == '__main__':

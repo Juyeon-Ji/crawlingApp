@@ -2,6 +2,11 @@ import random
 import logging
 import time
 import math
+import csv
+import logging
+
+from openpyxl import Workbook
+
 
 class Singleton(type):
     _instances = {}
@@ -63,3 +68,48 @@ class Utils:
             _page_count = 0
 
         return math.ceil(_page_count)
+
+    @classmethod
+    def export_excel(cls, curs):
+        workbook = Workbook()
+        file_name = "product_list.xlsx"
+        workbook_a = None
+        idx = 0
+        for data in curs:
+            cname: str = data.get('cname')
+            cname = cname.replace('/', "")
+            if workbook_a is None:
+                workbook_a = workbook.create_sheet(index=0, title=cname)
+                workbook_a['A1'] = 'title'
+                workbook_a['B1'] = 'category'
+                workbook_a['C1'] = 'price'
+            if workbook_a.title != cname:
+                if cname == '바인더1':
+                    break
+                try:
+                    workbook_a = workbook.get_sheet_by_name(cname)
+                except KeyError:
+                    workbook_a = workbook.create_sheet(index=0, title=cname)
+
+                workbook_a['A1'] = 'title'
+                workbook_a['B1'] = 'category'
+                workbook_a['C1'] = 'price'
+                logging.info('workbook_a - sheet name : ' + workbook_a.title)
+
+            idx += 1
+            title = data.get('title')
+            price = data.get('price')
+            csv_data = (title, cname, price)
+
+            workbook_a.append(csv_data)
+
+            if idx == 1000000:
+                logging.info("idx >> {0} ".format(idx))
+                idx = 0
+
+        logging.info("csv export start")
+        sheets = workbook.get_sheet_names()
+        print(sheets)
+
+        workbook.save(file_name)
+        logging.info("csv export end")

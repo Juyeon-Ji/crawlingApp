@@ -92,14 +92,14 @@ class ProductCrawl:
     def parse(self):
         """ 외부에서 파싱을 하기 위해 호출하는 함수 """
         # 카테고리 데이터 가져오기 임시 데이터
-        # _categories: list = self._category_getter()
+        _categories: list = self._category_getter()
         # 카테고리 샘플 데이터
-        _categories = [{
-            'cid': '50003568',
-            '_id': '50000158',
-            'paths': '생활/건강>문구/사무용품',
-            'name': '문구사무용품'
-        }]
+        # _categories = [{
+        #     'cid': '50003568',
+        #     '_id': '50000158',
+        #     'paths': '생활/건강>문구/사무용품',
+        #     'name': '문구사무용품'
+        # }]
 
         for category in _categories:
             self._category = category
@@ -125,6 +125,15 @@ class ProductCrawl:
 
         logging.info('>>> end childCategory: ' + self._category.get('name') + ' Pg.' + str(self._current_page))
 
+    def _make_list(self, _min, _max, _half):
+        result = []
+        a = [_min, _half]
+        b = [_half, _max]
+        result.append(a)
+        result.append(b)
+
+        return result
+
     def _filter_parse_recursive(self, min_value, max_value):
         _param = ("&maxPrice={0}&minPrice={1}".format(str(max_value), str(min_value)))
         _url = self.make_url(1, "NVSHPRC", _param)
@@ -132,13 +141,14 @@ class ProductCrawl:
         _is_oversize = _total_count > 8000
         _page_size = Utils.calc_page(_total_count, self._view_size)
         if _is_oversize:
-            # TODO: min, max 계산해서 재귀 돌수 있도록 하면될거같 은데..
-            half_pric = math.ceil(min_value + max_value / 2)
-            self._filter_parse_recursive(min_value, half_pric)
-            self._filter_parse_recursive(half_pric, max_value)
+            half_price = math.ceil((min_value + max_value) / 2)
+            _range = self._make_list(min_value, max_value, half_price)
+
+            for value in _range:
+                self._filter_parse_recursive(value[0], value[1])
 
         else:
-            self._execute_parse(_page_size)
+            self._execute_parse(_page_size, _param)
         pass
 
     def _filter_parse(self, filters: list):
@@ -157,16 +167,16 @@ class ProductCrawl:
             if _value is not None:
                 _min, _max = (int(_price) for _price in _value.split(_separator))
 
+            logging.info("Filter Parse >> min{0} / max{1}".format(_min, _max))
+
             self._filter_parse_recursive(_min, _max)
 
-
-
-    def _execute_parse(self, page_number):
+    def _execute_parse(self, page_number, filter_param: str = ""):
 
         for page_number in range(1, page_number):
             time.sleep(0.5)
             try:
-                _url = self.make_url(page_number)
+                _url = self.make_url(page_number, _filter=filter_param)
 
                 self.parse_data(self._get_product_json(_url))
 
@@ -186,15 +196,23 @@ class ProductCrawl:
         :return: data_dict 상품 정보
         """
         # header 추가 필요.
-        _headers = {'Content-Type': 'application/json;'}
-        req = requests.get(url, _headers)
+        try:
+            _headers = {'Content-Type': 'application/json;'}
+            req = requests.get(url, _headers)
 
-        html = req.text
-        soup = BeautifulSoup(html, 'html.parser')  # html.parser를 사용해서 soup에 넣겠다
+            html = req.text
+            soup = BeautifulSoup(html, 'html.parser')  # html.parser를 사용해서 soup에 넣겠다
 
-        json_data = soup.find('script', text=re.compile('application/json'))
+            json_data = soup.find('script', text=re.compile('application/json'))
 
-        data_dict = json.loads(str(json_data.contents[0]))
+            data_dict = json.loads(str(json_data.contents[0]))
+        except Exception as e:
+            data_dict = None
+            # 슬립 시간 조정 필요 - 8초가 부족할 수 있음.
+            time.sleep(8)
+            # 비정상적인 요청이 감지됨 - 다시 URL을 요청한다.
+            logging.error("no find Data request Error >> {0} | URL >> {1}".format(e, url))
+            self._get_product_json(url)
 
         return data_dict
 
@@ -247,7 +265,8 @@ class ProductCrawl:
     def _set_product_info(self, product_data: dict, product_item):
         product_data['id'] = product_item.get('id')
         product_data['imageUrl'] = product_item.get('imageUrl')
-        product_data['productTitle'] = product_item.get('productTitle')
+        product_data['title'] = product_item.get('productTitle')
+        product_data['price'] = product_item.get('price')
 
         product_data['option'] = {}
 
@@ -260,13 +279,13 @@ class ProductCrawl:
 
     def _insert_product_info(self, value: dict):
         """db data insert"""
-        logging.info(value.get('productTitle'))
-        # try:
-        #     # TODO: 값 비교는 어디서 하지?
-        #     _selection = self.database_manager.find_query("n_id", value.get("n_id"))
-        #     self.database_manager.update(self.PRODUCT_COLLECTION, _selection, value)
-        # except Exception as e:
-        #     logging.error('!!! Fail: Insert data to DB: ', e)
+        try:
+            # TODO: 값 비교는 어디서 하지?
+            # _selection = self.database_manager.find_query("n_id", value.get("n_id"))
+            # self.database_manager.insert_one_mongo(self.PRODUCT_COLLECTION, value)
+            pass
+        except Exception as e:
+            logging.error('!!! Fail: Insert data to DB: ', e)
 
     def _get_base_data(self, url):
         _data = self._get_product_json(url)
@@ -277,7 +296,12 @@ class ProductCrawl:
         if _data is not None:
             products = self._get_data(_data, 'products')
             if products is not None:
-                _total_count = int(products.get('total'))
+
+                _total_count = products.get('total')
+                if _total_count is not None:
+                    _total_count = int(_total_count)
+                else:
+                    _total_count = 0
 
             filters = self._get_data(_data, 'mainFilters')
             if filters is not None:
